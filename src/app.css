@@ -1,0 +1,130 @@
+@import 'tailwindcss';
+
+:root {
+  --color-bg: #0f0f0f;
+  --color-bg-sidebar: #161616;
+  --color-bg-card: #1a1a1a;
+  --color-bg-input: #222222;
+  --color-border: #2a2a2a;
+  --color-text: #e5e5e5;
+  --color-text-muted: #888888;
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-accent: #8b5cf6;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-card);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a4a;
+  border-radius: 5px;
+  border: 2px solid var(--color-bg-card);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a6a;
+}
+::-webkit-scrollbar-thumb:active {
+  background: var(--color-primary);
+}
+::-webkit-scrollbar-corner {
+  background: var(--color-bg-card);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a4a var(--color-bg-card);
+}
+
+/* Hide scrollbar mode */
+html.hide-scrollbar ::-webkit-scrollbar,
+html.hide-scrollbar dialog ::-webkit-scrollbar {
+  display: none;
+}
+html.hide-scrollbar *,
+html.hide-scrollbar dialog,
+html.hide-scrollbar dialog * {
+  scrollbar-width: none;
+}
+
+/* Overlay scrollbar mode — appears on hover, no layout shift */
+html.overlay-scrollbar ::-webkit-scrollbar,
+html.overlay-scrollbar dialog ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+html.overlay-scrollbar ::-webkit-scrollbar-track,
+html.overlay-scrollbar dialog ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.overlay-scrollbar ::-webkit-scrollbar-thumb,
+html.overlay-scrollbar dialog ::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+html.overlay-scrollbar *:hover::-webkit-scrollbar-thumb,
+html.overlay-scrollbar dialog *:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+html.overlay-scrollbar *:hover::-webkit-scrollbar-thumb:hover,
+html.overlay-scrollbar dialog *:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+html.overlay-scrollbar *:hover::-webkit-scrollbar-thumb:active,
+html.overlay-scrollbar dialog *:hover::-webkit-scrollbar-thumb:active {
+  background: var(--color-primary);
+}
+html.overlay-scrollbar *,
+html.overlay-scrollbar dialog,
+html.overlay-scrollbar dialog * {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+html.overlay-scrollbar *:hover,
+html.overlay-scrollbar dialog *:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Canvas crisp rendering */
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Range inputs / sliders */
+input[type="range"] {
+  accent-color: var(--color-primary);
+}
+
+/* Selection colors */
+::selection {
+  background-color: var(--color-primary);
+  color: white;
+}
