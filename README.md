@@ -1,42 +1,98 @@
-# sv
+# DaMapArts
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+DaMapArts is a web application for converting images into **Minecraft map art**.
+It lets you upload an image, tune processing settings, quantize it to Minecraft block palettes with dithering, and export practical build outputs.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Image upload (`JPG`, `PNG`, `WebP`, `GIF`)
+- Map-based cropping and scaling (`128x128` per map)
+- Image adjustments (brightness, contrast, saturation)
+- Optional pre-processing (bilateral filter + edge detection)
+- Palette quantization to Minecraft blocks
+- Multiple dithering algorithms
+- Live preview, material counts, and export panel
 
-```sh
-# create a new project
-npx sv create my-app
+## Tech Stack
+
+- SvelteKit + Vite
+- TypeScript
+- Tailwind CSS
+- Vitest
+
+## Requirements
+
+- Node.js 20+
+- pnpm 9+
+
+## Installation
+
+```bash
+pnpm install
 ```
 
-To recreate this project with the same configuration:
+## Development
 
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --no-install mapartcraft-svelte
+```bash
+pnpm dev
 ```
 
-## Developing
+Open the local URL shown by Vite (usually `http://localhost:5173`).
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Available Scripts
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+pnpm dev          # start development server
+pnpm build        # production build
+pnpm preview      # preview production build locally
+pnpm check        # type-check + svelte-check
+pnpm check:watch  # watch mode for checks
 ```
 
-## Building
+## Project Structure
 
-To create a production version of your app:
-
-```sh
-npm run build
+```text
+src/
+	routes/                # app layout and main page
+	lib/
+		components/          # main UI (upload, preview, export, materials, etc.)
+		processor/           # image processing pipeline
+		palette/             # palette and color-space logic
+		dither/              # dithering algorithms
+		stores/              # global app state
+		export/              # export utilities
+static/
+	images/                # static images and assets
+references/              # reference projects/material (not core app runtime)
+PIPELINE.md              # full technical processing pipeline documentation
 ```
 
-You can preview the production build with `npm run preview`.
+## Processing Pipeline
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+See `PIPELINE.md` for full details. High-level flow:
+
+1. Image upload and validation
+2. Crop/scale to target map resolution
+3. Color adjustments
+4. Optional pre-processing (bilateral + edge mask)
+5. Palette quantization
+6. Dithering
+7. Material counting
+8. Export
+
+## Acknowledgements
+
+This project is based on prior work from the MapartCraft ecosystem, especially:
+
+- [rebane2001/mapartcraft](https://github.com/rebane2001/mapartcraft)
+
+Thanks to the original authors and contributors for the foundational ideas, data formats, and tooling that made this project possible.
+
+## License
+
+This project uses the same license as the referenced previous project: **GNU General Public License v3.0 (GPL-3.0)**.
+See the `LICENSE` file for the full text.
+
+## Status
+
+Active development.
