@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { getAppState } from '$lib/stores/index.js';
 	import { modal } from '$lib/stores/modal.svelte.js';
@@ -452,18 +453,18 @@
 
 	function getBlockImageStyle(colourSetId: string, blockId: string): string {
 		if (blockId === '-1') {
-			return 'background-image: url(/images/textures.png); background-position: -32px -2048px';
+			return `background-image: url(${base}/images/textures.png); background-position: -32px -2048px`;
 		}
 		// Custom blocks use a special icon (column 5, row 64) with colour-set background
 		const cJSON = app.coloursJSON as unknown as ColoursJSON;
 		const block = cJSON[colourSetId]?.blocks[blockId];
 		if (block && block.presetIndex === -999) {
 			const bgColor = `rgb(${cJSON[colourSetId].tonesRGB.normal.join(', ')})`;
-			return `background-image: url(/images/textures.png); background-position: -160px -2048px; background-color: ${bgColor}`;
+			return `background-image: url(${base}/images/textures.png); background-position: -160px -2048px; background-color: ${bgColor}`;
 		}
 		const x = parseInt(blockId) * 32;
 		const y = parseInt(colourSetId) * 32;
-		return `background-image: url(/images/textures.png); background-position: -${x}px -${y}px`;
+		return `background-image: url(${base}/images/textures.png); background-position: -${x}px -${y}px`;
 	}
 
 	function selectBlock(colourSetId: string, blockId: string) {

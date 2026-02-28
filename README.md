@@ -57,13 +57,18 @@ This repository is configured for GitHub Pages deployment via GitHub Actions.
 
 - Workflow file: `.github/workflows/deploy.yml`
 - Output directory: `build`
-- Expected URL type: `https://<username>.github.io/<repository>`
-- `BASE_PATH` is set automatically in CI to `/<repository>`
+- Expected URL type: `https://<username>.github.io/<repository>` (or root when using custom domain)
+- `BASE_PATH` is read from GitHub Repository Variable `BASE_PATH`
 
 In GitHub repository settings, set:
 
 1. **Pages → Build and deployment → Source** = `GitHub Actions`
 2. Keep default branch as `main`
+
+Base path configuration:
+
+- For custom domain (root), keep `BASE_PATH` empty
+- For project subpath, set `BASE_PATH` to `/<repository>`
 
 ## Project Structure
 

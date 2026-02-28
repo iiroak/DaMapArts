@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { getAppState } from '$lib/stores/index.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
@@ -49,7 +50,7 @@
 		return new Promise((resolve) => {
 			const img = new Image();
 			img.onload = () => { _texturesImg = img; resolve(img); };
-			img.src = '/images/textures.png';
+			img.src = `${base}/images/textures.png`;
 		});
 	}
 

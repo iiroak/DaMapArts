@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
 
 	interface Props {
@@ -139,13 +140,13 @@
 							</div>
 							<p class="about-donate-msg">Hey! If you liked the project, help me skip the normal queue in 2b2t</p>
 						</div>
-						<img src="/images/kaori-tree.png" alt="Kaori Tree" class="about-img" />
+						<img src={`${base}/images/kaori-tree.png`} alt="Kaori Tree" class="about-img" />
 					</div>
 
 				{:else if activeTab === 'technology'}
 					<div class="content-section">
 						<div class="tech-logo">
-							<img src="/images/damapart.png" alt="DaMapArts" class="tech-logo-img" />
+							<img src={`${base}/images/damapart.png`} alt="DaMapArts" class="tech-logo-img" />
 							<h3 class="tech-logo-title">DaMapArts</h3>
 						</div>
 						<p class="content-text">

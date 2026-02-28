@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { getAppState } from '$lib/stores/index.js';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
@@ -9,7 +10,7 @@
 
 <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
 	<div class="flex items-center gap-3">
-		<img src="/images/damapart.png" alt="DaMapArts" class="h-8 w-8" />
+		<img src={`${base}/images/damapart.png`} alt="DaMapArts" class="h-8 w-8" />
 		<h1 class="text-xl font-bold">DaMapArts</h1>
 	</div>
 

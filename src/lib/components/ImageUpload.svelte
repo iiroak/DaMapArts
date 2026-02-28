@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { getAppState } from '$lib/stores/index.js';
 
 	const app = getAppState();
@@ -69,7 +70,7 @@
 	role="region"
 	aria-label="Image upload area"
 >
-	<img src="/images/upload.png" alt="Upload" class="h-16 w-16 opacity-50" />
+	<img src={`${base}/images/upload.png`} alt="Upload" class="h-16 w-16 opacity-50" />
 
 	<div class="text-center">
 		<h2 class="mb-2 text-2xl font-semibold">Upload an Image</h2>

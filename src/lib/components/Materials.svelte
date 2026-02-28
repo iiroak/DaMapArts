@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { getAppState } from '$lib/stores/index.js';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
@@ -13,7 +14,7 @@
 
 	function getBlockIconStyle(colourSetId: string): string {
 		const y = parseInt(colourSetId) * 32;
-		return `background-image: url(/images/textures.png); background-position: 0px -${y}px; background-size: 640px 2080px;`;
+		return `background-image: url(${base}/images/textures.png); background-position: 0px -${y}px; background-size: 640px 2080px;`;
 	}
 
 	// Aggregate materials across all map sections
