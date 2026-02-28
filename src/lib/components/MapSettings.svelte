@@ -144,17 +144,34 @@
 				<option value="none">None</option>
 				<optgroup label="Error Diffusion">
 					<option value="floyd-steinberg">Floyd-Steinberg</option>
+					<option value="floyd-steinberg-20">Floyd-Steinberg (/20)</option>
+					<option value="floyd-steinberg-24">Floyd-Steinberg (/24)</option>
 					<option value="min-avg-err">MinAvgErr</option>
 					<option value="burkes">Burkes</option>
 					<option value="sierra-lite">Sierra-Lite</option>
+					<option value="sierra-3">Sierra (Full)</option>
+					<option value="sierra-2row">Sierra (Two-row)</option>
 					<option value="stucki">Stucki</option>
+					<option value="jarvis-judice-ninke">Jarvis-Judice-Ninke</option>
 					<option value="atkinson">Atkinson</option>
+					<option value="atkinson-6">Atkinson (/6)</option>
+					<option value="atkinson-10">Atkinson (/10)</option>
+					<option value="atkinson-12">Atkinson (/12)</option>
+					<option value="fan">Fan</option>
+					<option value="shiau-fan">Shiau-Fan</option>
+					<option value="shiau-fan-2">Shiau-Fan 2</option>
 					<option value="ostromoukhov">Ostromoukhov</option>
 				</optgroup>
 				<optgroup label="Ordered">
-					<option value="bayer-4x4">Bayer (4×4)</option>
 					<option value="bayer-2x2">Bayer (2×2)</option>
+					<option value="bayer-3x3">Bayer (3×3)</option>
+					<option value="bayer-4x4">Bayer (4×4)</option>
+					<option value="bayer-8x8">Bayer (8×8)</option>
 					<option value="ordered-3x3">Ordered (3×3)</option>
+					<option value="cluster-dot">Cluster Dot (Halftone)</option>
+					<option value="halftone-8x8">Halftone (8×8)</option>
+					<option value="void-cluster-14x14">Void-and-cluster (14×14)</option>
+					<option value="knoll">Knoll</option>
 					<option value="blue-noise">Blue Noise</option>
 				</optgroup>
 				<optgroup label="Curve">

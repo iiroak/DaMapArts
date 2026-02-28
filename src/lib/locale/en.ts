@@ -67,6 +67,10 @@ const en: Record<string, string> = {
   'processing.worker': 'Worker (CPU off-thread)',
   'processing.main': 'Main Thread (legacy)',
   'processing.compare': 'Compare All Combos',
+  'processing.channelPropagation': 'RGB Error Propagation',
+  'processing.redPropagation': 'Red channel',
+  'processing.greenPropagation': 'Green channel',
+  'processing.bluePropagation': 'Blue channel',
 
   // ── ImageSettings ──
   'image.title': 'Image',

@@ -13,7 +13,7 @@
 	const PROFILE_FIELDS: (keyof AppState)[] = [
 		'selectedVersion', 'selectedBlocks',
 		'mapSizeX', 'mapSizeZ', 'modeId', 'staircasingId',
-		'ditherMethodId', 'colorSpace',
+		'ditherMethodId', 'ditherPropagationRed', 'ditherPropagationGreen', 'ditherPropagationBlue', 'colorSpace',
 		'cropMode', 'cropZoom', 'cropOffsetX', 'cropOffsetY',
 		'brightness', 'contrast', 'saturation',
 		'transparencyEnabled', 'transparencyTolerance',

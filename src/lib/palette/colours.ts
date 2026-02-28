@@ -13,6 +13,35 @@ import type {
 import type { SupportedVersion, ColorSpace } from '$lib/types/settings.js';
 import { rgb2lab, rgb2oklab, rgb2oklch, rgb2ycbcr, rgb2hsl, rgbToHex } from './colorSpace.js';
 
+function compareMcVersions(a: string, b: string): number {
+  const aParts = a.split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const bParts = b.split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const len = Math.max(aParts.length, bParts.length);
+  for (let index = 0; index < len; index++) {
+    const av = aParts[index] ?? 0;
+    const bv = bParts[index] ?? 0;
+    if (av !== bv) return av - bv;
+  }
+  return 0;
+}
+
+function resolveBlockVersionData(
+  block: BlockEntry,
+  mcVersion: string,
+  seen = new Set<string>(),
+): { NBTName: string; NBTArgs: Record<string, string> } | null {
+  if (seen.has(mcVersion)) return null;
+  seen.add(mcVersion);
+
+  const data = block.validVersions[mcVersion];
+  if (!data) return null;
+  if (typeof data === 'string') {
+    const targetVersion = data.startsWith('&') ? data.slice(1) : data;
+    return resolveBlockVersionData(block, targetVersion, seen);
+  }
+  return data;
+}
+
 /**
  * Build the active palette from the current settings.
  *
@@ -79,13 +108,19 @@ export function getBlockNBTData(
   block: BlockEntry,
   mcVersion: string,
 ): { NBTName: string; NBTArgs: Record<string, string> } | null {
-  let data = block.validVersions[mcVersion];
-  if (typeof data === 'string') {
-    // Reference to another version: "&1.12.2"
-    data = block.validVersions[data.slice(1)];
-  }
-  if (!data || typeof data === 'string') return null;
-  return data;
+  const exact = resolveBlockVersionData(block, mcVersion);
+  if (exact) return exact;
+
+  const availableVersions = Object.keys(block.validVersions)
+    .filter((v) => resolveBlockVersionData(block, v) !== null)
+    .sort(compareMcVersions);
+  if (availableVersions.length === 0) return null;
+
+  const target = availableVersions
+    .filter((v) => compareMcVersions(v, mcVersion) <= 0)
+    .at(-1) ?? availableVersions.at(-1)!;
+
+  return resolveBlockVersionData(block, target);
 }
 
 /**

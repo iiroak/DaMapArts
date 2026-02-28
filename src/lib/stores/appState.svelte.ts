@@ -51,6 +51,9 @@ export interface AppState {
 
   // Dithering
   ditherMethodId: string;
+  ditherPropagationRed: number;
+  ditherPropagationGreen: number;
+  ditherPropagationBlue: number;
   colorSpace: ColorSpace;
 
   // Crop
@@ -157,6 +160,9 @@ export function createAppState(): AppState {
 
     // Dithering
     ditherMethodId: 'floyd-steinberg',
+    ditherPropagationRed: 100,
+    ditherPropagationGreen: 100,
+    ditherPropagationBlue: 100,
     colorSpace: 'lab' as ColorSpace,
 
     // Crop

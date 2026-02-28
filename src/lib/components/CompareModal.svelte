@@ -8,6 +8,9 @@
 		brightness: number;
 		contrast: number;
 		saturation: number;
+		propagationRed: number;
+		propagationGreen: number;
+		propagationBlue: number;
 		dataUrl: string | null;
 		fidelity: number | null;
 	}
@@ -36,6 +39,9 @@
 	let _savedSweepBrightness = { enabled: false, range: 10, step: 5 };
 	let _savedSweepContrast = { enabled: false, range: 10, step: 5 };
 	let _savedSweepSaturation = { enabled: false, range: 10, step: 5 };
+	let _savedSweepPropagationRed = { enabled: false, range: 20, step: 10 };
+	let _savedSweepPropagationGreen = { enabled: false, range: 20, step: 10 };
+	let _savedSweepPropagationBlue = { enabled: false, range: 20, step: 10 };
 	let _savedFixDither = false;
 	let _savedFixColorSpace = false;
 	let _savedSortByFidelity = true;
@@ -55,7 +61,14 @@
 	import type { ColorSpace } from '$lib/types/settings.js';
 
 	interface Props {
-		onSelect: (ditherMethod: string, colorSpace: ColorSpace, bcs?: { brightness: number; contrast: number; saturation: number }) => void;
+		onSelect: (
+			ditherMethod: string,
+			colorSpace: ColorSpace,
+			options?: {
+				bcs?: { brightness: number; contrast: number; saturation: number };
+				propagation?: { red: number; green: number; blue: number };
+			},
+		) => void;
 		onClose: () => void;
 	}
 
@@ -93,6 +106,9 @@
 		brightness: number;
 		contrast: number;
 		saturation: number;
+		propagationRed: number;
+		propagationGreen: number;
+		propagationBlue: number;
 		dataUrl: string | null;
 		fidelity: number | null;
 	}
@@ -112,6 +128,9 @@
 	let sweepBrightness = $state<SweepConfig>({ ..._savedSweepBrightness });
 	let sweepContrast = $state<SweepConfig>({ ..._savedSweepContrast });
 	let sweepSaturation = $state<SweepConfig>({ ..._savedSweepSaturation });
+	let sweepPropagationRed = $state<SweepConfig>({ ..._savedSweepPropagationRed });
+	let sweepPropagationGreen = $state<SweepConfig>({ ..._savedSweepPropagationGreen });
+	let sweepPropagationBlue = $state<SweepConfig>({ ..._savedSweepPropagationBlue });
 	let fixDither = $state(_savedFixDither);
 	let fixColorSpace = $state(_savedFixColorSpace);
 	let sortByFidelity = $state(_savedSortByFidelity);
@@ -147,6 +166,9 @@
 	}
 
 	let hasBCSSweep = $derived(sweepBrightness.enabled || sweepContrast.enabled || sweepSaturation.enabled);
+	let hasPropagationSweep = $derived(
+		sweepPropagationRed.enabled || sweepPropagationGreen.enabled || sweepPropagationBlue.enabled,
+	);
 
 	let totalCombos = $derived.by(() => {
 		const ditherCount = fixDither ? 1 : methods.length;
@@ -160,7 +182,16 @@
 		const sCount = sweepSaturation.enabled
 			? rangeValues(app.saturation, sweepSaturation.range, sweepSaturation.step, 0, 200).length
 			: 1;
-		return ditherCount * csCount * bCount * cCount * sCount;
+		const prCount = sweepPropagationRed.enabled
+			? rangeValues(app.ditherPropagationRed, sweepPropagationRed.range, sweepPropagationRed.step, 0, 200).length
+			: 1;
+		const pgCount = sweepPropagationGreen.enabled
+			? rangeValues(app.ditherPropagationGreen, sweepPropagationGreen.range, sweepPropagationGreen.step, 0, 200).length
+			: 1;
+		const pbCount = sweepPropagationBlue.enabled
+			? rangeValues(app.ditherPropagationBlue, sweepPropagationBlue.range, sweepPropagationBlue.step, 0, 200).length
+			: 1;
+		return ditherCount * csCount * bCount * cCount * sCount * prCount * pgCount * pbCount;
 	});
 
 	/** Build a flat list of all combos to process */
@@ -179,6 +210,15 @@
 		const sValues = sweepSaturation.enabled
 			? rangeValues(app.saturation, sweepSaturation.range, sweepSaturation.step, 0, 200)
 			: [app.saturation];
+		const prValues = sweepPropagationRed.enabled
+			? rangeValues(app.ditherPropagationRed, sweepPropagationRed.range, sweepPropagationRed.step, 0, 200)
+			: [app.ditherPropagationRed];
+		const pgValues = sweepPropagationGreen.enabled
+			? rangeValues(app.ditherPropagationGreen, sweepPropagationGreen.range, sweepPropagationGreen.step, 0, 200)
+			: [app.ditherPropagationGreen];
+		const pbValues = sweepPropagationBlue.enabled
+			? rangeValues(app.ditherPropagationBlue, sweepPropagationBlue.range, sweepPropagationBlue.step, 0, 200)
+			: [app.ditherPropagationBlue];
 
 		const combos: ComboResult[] = [];
 		for (const d of dithers) {
@@ -186,17 +226,26 @@
 				for (const b of bValues) {
 					for (const c of cValues) {
 						for (const s of sValues) {
-							combos.push({
-								ditherMethod: d.id,
-								ditherName: d.name,
-								colorSpace: cs,
-								csLabel: CS_LABEL[cs],
-								brightness: b,
-								contrast: c,
-								saturation: s,
-								dataUrl: null,
-								fidelity: null,
-							});
+							for (const pr of prValues) {
+								for (const pg of pgValues) {
+									for (const pb of pbValues) {
+										combos.push({
+											ditherMethod: d.id,
+											ditherName: d.name,
+											colorSpace: cs,
+											csLabel: CS_LABEL[cs],
+											brightness: b,
+											contrast: c,
+											saturation: s,
+											propagationRed: pr,
+											propagationGreen: pg,
+											propagationBlue: pb,
+											dataUrl: null,
+											fidelity: null,
+										});
+									}
+								}
+							}
 						}
 					}
 				}
@@ -227,6 +276,9 @@
 			transparencyTolerance: app.transparencyTolerance,
 			backgroundMode: app.backgroundMode,
 			backgroundColour: app.backgroundColour,
+			ditherPropagationRed: hasPropagationSweep ? 'sweep' : app.ditherPropagationRed,
+			ditherPropagationGreen: hasPropagationSweep ? 'sweep' : app.ditherPropagationGreen,
+			ditherPropagationBlue: hasPropagationSweep ? 'sweep' : app.ditherPropagationBlue,
 			selectedBlocks: app.selectedBlocks,
 			sourceFile: app.sourceFileName,
 			// Advanced config
@@ -235,6 +287,9 @@
 			sweepBrightness: sweepBrightness.enabled ? sweepBrightness : null,
 			sweepContrast: sweepContrast.enabled ? sweepContrast : null,
 			sweepSaturation: sweepSaturation.enabled ? sweepSaturation : null,
+			sweepPropagationRed: sweepPropagationRed.enabled ? sweepPropagationRed : null,
+			sweepPropagationGreen: sweepPropagationGreen.enabled ? sweepPropagationGreen : null,
+			sweepPropagationBlue: sweepPropagationBlue.enabled ? sweepPropagationBlue : null,
 			// Filter settings
 			bilateralEnabled: app.bilateralEnabled,
 			bilateralSigmaSpace: app.bilateralEnabled ? app.bilateralSigmaSpace : 0,
@@ -256,6 +311,9 @@
 			brightness: r.brightness,
 			contrast: r.contrast,
 			saturation: r.saturation,
+			propagationRed: r.propagationRed,
+			propagationGreen: r.propagationGreen,
+			propagationBlue: r.propagationBlue,
 			dataUrl: r.dataUrl,
 			fidelity: r.fidelity,
 		}));
@@ -276,6 +334,9 @@
 			brightness: r.brightness,
 			contrast: r.contrast,
 			saturation: r.saturation,
+			propagationRed: r.propagationRed ?? app.ditherPropagationRed,
+			propagationGreen: r.propagationGreen ?? app.ditherPropagationGreen,
+			propagationBlue: r.propagationBlue ?? app.ditherPropagationBlue,
 			dataUrl: r.dataUrl,
 			fidelity: r.fidelity,
 		}));
@@ -323,6 +384,9 @@
 		_savedSweepBrightness = { ...sweepBrightness };
 		_savedSweepContrast = { ...sweepContrast };
 		_savedSweepSaturation = { ...sweepSaturation };
+		_savedSweepPropagationRed = { ...sweepPropagationRed };
+		_savedSweepPropagationGreen = { ...sweepPropagationGreen };
+		_savedSweepPropagationBlue = { ...sweepPropagationBlue };
 		_savedFixDither = fixDither;
 		_savedFixColorSpace = fixColorSpace;
 		_savedSortByFidelity = sortByFidelity;
@@ -419,6 +483,9 @@
 			cropOffsetX: renderMode === 'full' ? app.cropOffsetX : 50,
 			cropOffsetY: renderMode === 'full' ? app.cropOffsetY : 50,
 			ditherMethod: '',
+			ditherPropagationRed: app.ditherPropagationRed,
+			ditherPropagationGreen: app.ditherPropagationGreen,
+			ditherPropagationBlue: app.ditherPropagationBlue,
 			colorSpace: 'rgb',
 			brightness: app.brightness,
 			contrast: app.contrast,
@@ -481,6 +548,9 @@
 					const comboSettings: ProcessorSettings = {
 						...baseSettings,
 						ditherMethod: combo.ditherMethod,
+						ditherPropagationRed: combo.propagationRed,
+						ditherPropagationGreen: combo.propagationGreen,
+						ditherPropagationBlue: combo.propagationBlue,
 						colorSpace: combo.colorSpace,
 						brightness: combo.brightness,
 						contrast: combo.contrast,
@@ -492,6 +562,9 @@
 				const comboSettings: ProcessorSettings = {
 					...baseSettings,
 					ditherMethod: combo.ditherMethod,
+					ditherPropagationRed: combo.propagationRed,
+					ditherPropagationGreen: combo.propagationGreen,
+					ditherPropagationBlue: combo.propagationBlue,
 					colorSpace: combo.colorSpace,
 					brightness: combo.brightness,
 					contrast: combo.contrast,
@@ -563,7 +636,10 @@
 		const bcs = hasBCSSweep
 			? { brightness: combo.brightness, contrast: combo.contrast, saturation: combo.saturation }
 			: undefined;
-		onSelect(combo.ditherMethod, combo.colorSpace, bcs);
+		const propagation = hasPropagationSweep
+			? { red: combo.propagationRed, green: combo.propagationGreen, blue: combo.propagationBlue }
+			: undefined;
+		onSelect(combo.ditherMethod, combo.colorSpace, { bcs, propagation });
 		// Don't close — let user browse/apply multiple combos freely
 	}
 
@@ -620,6 +696,9 @@
 	let bcsPreviewB = $derived(sweepBrightness.enabled ? rangeValues(app.brightness, sweepBrightness.range, sweepBrightness.step, 50, 150) : [app.brightness]);
 	let bcsPreviewC = $derived(sweepContrast.enabled ? rangeValues(app.contrast, sweepContrast.range, sweepContrast.step, 50, 150) : [app.contrast]);
 	let bcsPreviewS = $derived(sweepSaturation.enabled ? rangeValues(app.saturation, sweepSaturation.range, sweepSaturation.step, 0, 200) : [app.saturation]);
+	let propPreviewR = $derived(sweepPropagationRed.enabled ? rangeValues(app.ditherPropagationRed, sweepPropagationRed.range, sweepPropagationRed.step, 0, 200) : [app.ditherPropagationRed]);
+	let propPreviewG = $derived(sweepPropagationGreen.enabled ? rangeValues(app.ditherPropagationGreen, sweepPropagationGreen.range, sweepPropagationGreen.step, 0, 200) : [app.ditherPropagationGreen]);
+	let propPreviewB = $derived(sweepPropagationBlue.enabled ? rangeValues(app.ditherPropagationBlue, sweepPropagationBlue.range, sweepPropagationBlue.step, 0, 200) : [app.ditherPropagationBlue]);
 
 	let poolSize = $derived(getPoolSize());
 	let isFirefox = $derived(typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent));
@@ -784,13 +863,13 @@
 					</p>
 				</div>
 
-				<!-- Advanced: BCS Parameter Sweep -->
+				<!-- Advanced: BCS + Propagation Sweep -->
 				<div class="rounded-lg border border-[var(--color-border)] overflow-hidden">
 					<button
 						onclick={() => (advancedExpanded = !advancedExpanded)}
 						class="flex w-full items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
 					>
-						<span>Advanced — BCS Sweep {hasBCSSweep ? '(active)' : ''}</span>
+						<span>Advanced — BCS + RGB Sweep {(hasBCSSweep || hasPropagationSweep) ? '(active)' : ''}</span>
 						<svg
 							class="h-4 w-4 transition-transform {advancedExpanded ? 'rotate-180' : ''}"
 							viewBox="0 0 24 24"
@@ -809,6 +888,9 @@
 								{#if hasBCSSweep}
 									Fidelity is measured against the original image (neutral BCS).
 								{/if}
+							</p>
+							<p class="text-xs text-[var(--color-muted)]">
+								RGB propagation sweep tests channel error diffusion strengths around current values.
 							</p>
 
 							<!-- Fix dither / color space -->
@@ -921,6 +1003,69 @@
 									</div>
 								{/if}
 							</div>
+
+							<!-- Red propagation sweep -->
+							<div class="space-y-1">
+								<label class="flex items-center gap-2 text-xs font-medium">
+									<input type="checkbox" bind:checked={sweepPropagationRed.enabled} class="accent-[var(--color-primary)]" />
+									Red propagation
+									<span class="text-[var(--color-muted)]">
+										(current: {app.ditherPropagationRed}% | {propPreviewR.length} values: {propPreviewR[0]}–{propPreviewR[propPreviewR.length - 1]}%)
+									</span>
+								</label>
+								{#if sweepPropagationRed.enabled}
+									<div class="flex items-center gap-3 pl-6">
+										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+											±<input type="number" min="1" max="100" bind:value={sweepPropagationRed.range} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+										</label>
+										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+											Step<input type="number" min="1" max="100" bind:value={sweepPropagationRed.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+										</label>
+									</div>
+								{/if}
+							</div>
+
+							<!-- Green propagation sweep -->
+							<div class="space-y-1">
+								<label class="flex items-center gap-2 text-xs font-medium">
+									<input type="checkbox" bind:checked={sweepPropagationGreen.enabled} class="accent-[var(--color-primary)]" />
+									Green propagation
+									<span class="text-[var(--color-muted)]">
+										(current: {app.ditherPropagationGreen}% | {propPreviewG.length} values: {propPreviewG[0]}–{propPreviewG[propPreviewG.length - 1]}%)
+									</span>
+								</label>
+								{#if sweepPropagationGreen.enabled}
+									<div class="flex items-center gap-3 pl-6">
+										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+											±<input type="number" min="1" max="100" bind:value={sweepPropagationGreen.range} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+										</label>
+										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+											Step<input type="number" min="1" max="100" bind:value={sweepPropagationGreen.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+										</label>
+									</div>
+								{/if}
+							</div>
+
+							<!-- Blue propagation sweep -->
+							<div class="space-y-1">
+								<label class="flex items-center gap-2 text-xs font-medium">
+									<input type="checkbox" bind:checked={sweepPropagationBlue.enabled} class="accent-[var(--color-primary)]" />
+									Blue propagation
+									<span class="text-[var(--color-muted)]">
+										(current: {app.ditherPropagationBlue}% | {propPreviewB.length} values: {propPreviewB[0]}–{propPreviewB[propPreviewB.length - 1]}%)
+									</span>
+								</label>
+								{#if sweepPropagationBlue.enabled}
+									<div class="flex items-center gap-3 pl-6">
+										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+											±<input type="number" min="1" max="100" bind:value={sweepPropagationBlue.range} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+										</label>
+										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+											Step<input type="number" min="1" max="100" bind:value={sweepPropagationBlue.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+										</label>
+									</div>
+								{/if}
+							</div>
 						</div>
 					{/if}
 				</div>
@@ -928,11 +1073,12 @@
 				<!-- Summary & Start -->
 				<div class="space-y-2">
 					<p class="text-xs text-[var(--color-muted)]">
-						{#if hasBCSSweep}
+						{#if hasBCSSweep || hasPropagationSweep}
 							{@const ditherCount = fixDither ? 1 : methods.length}
 							{@const csCount = fixColorSpace ? 1 : COLOR_SPACES.length}
 							{ditherCount} dither{ditherCount > 1 ? 's' : ''} × {csCount} space{csCount > 1 ? 's' : ''}
-							× BCS sweep
+							{#if hasBCSSweep} × BCS sweep{/if}
+							{#if hasPropagationSweep} × RGB sweep{/if}
 						{:else}
 							{methods.length} dithers × {COLOR_SPACES.length} spaces
 						{/if}
@@ -1005,7 +1151,10 @@
 						combo.colorSpace === app.colorSpace &&
 						combo.brightness === app.brightness &&
 						combo.contrast === app.contrast &&
-						combo.saturation === app.saturation}
+						combo.saturation === app.saturation &&
+						combo.propagationRed === app.ditherPropagationRed &&
+						combo.propagationGreen === app.ditherPropagationGreen &&
+						combo.propagationBlue === app.ditherPropagationBlue}
 					{@const isBest = idx === bestFidelityIdx && combo.fidelity !== null}
 					<button
 						onclick={() => select(combo)}
@@ -1075,6 +1224,11 @@
 							{#if hasBCSSweep}
 								<p class="text-[9px] tabular-nums text-[var(--color-muted)]">
 									B:{combo.brightness}% C:{combo.contrast}% S:{combo.saturation}%
+								</p>
+							{/if}
+							{#if hasPropagationSweep}
+								<p class="text-[9px] tabular-nums text-[var(--color-muted)]">
+									R:{combo.propagationRed}% G:{combo.propagationGreen}% B:{combo.propagationBlue}%
 								</p>
 							{/if}
 							{#if combo.fidelity !== null}

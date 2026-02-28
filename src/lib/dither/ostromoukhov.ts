@@ -64,6 +64,9 @@ export function distributeErrorOstromoukhov(
   errB: number,
   intensity: number,
   direction: 1 | -1,
+  propRed = 100,
+  propGreen = 100,
+  propBlue = 100,
 ): void {
   const { right, downLeft, down, divisor } = getOstromoukhovCoeffs(intensity);
 
@@ -81,8 +84,8 @@ export function distributeErrorOstromoukhov(
 
     const nIdx = (ny * width + nx) * 3;
     const factor = weight / divisor;
-    rgbFloat[nIdx] += errR * factor;
-    rgbFloat[nIdx + 1] += errG * factor;
-    rgbFloat[nIdx + 2] += errB * factor;
+    rgbFloat[nIdx] += errR * factor * (propRed / 100);
+    rgbFloat[nIdx + 1] += errG * factor * (propGreen / 100);
+    rgbFloat[nIdx + 2] += errB * factor * (propBlue / 100);
   }
 }

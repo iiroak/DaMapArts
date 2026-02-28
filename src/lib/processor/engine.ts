@@ -264,10 +264,20 @@ export function processPixels(input: EngineInput): EngineOutput {
   const useBlueNoise = isBlueNoise(methodId);
   const useOstro = isOstromoukhov(methodId);
   const useRiemer = isRiemersma(methodId);
+  const useTwoClosestOrdered = [
+    'bayer-2x2',
+    'bayer-3x3',
+    'bayer-4x4',
+    'bayer-8x8',
+    'ordered-3x3',
+    'cluster-dot',
+    'halftone-8x8',
+    'void-cluster-14x14',
+    'knoll',
+  ].includes(methodId);
 
   // Step 1: Apply threshold-based dither (ordered / blue noise) — modifies rgbFloat
-  if (useOrdered && methodId !== 'bayer-4x4' && methodId !== 'bayer-2x2' && methodId !== 'bayer-8x8'
-      && methodId !== 'ordered-3x3' && methodId !== 'cluster-dot' && methodId !== 'knoll') {
+  if (useOrdered && !useTwoClosestOrdered) {
     // Generic ordered dither bias (for any future ordered methods)
     applyOrderedDither(rgbFloat, width, height, methodId);
   }
@@ -488,14 +498,41 @@ export function processPixels(input: EngineInput): EngineOutput {
           const errR = (rMatch - closest.rgb[0]) * dampFactor;
           const errG = (gMatch - closest.rgb[1]) * dampFactor;
           const errB = (bMatch - closest.rgb[2]) * dampFactor;
-          distributeError(rgbFloat, width, height, x, y, errR, errG, errB, methodId);
+          distributeError(
+            rgbFloat,
+            width,
+            height,
+            x,
+            y,
+            errR,
+            errG,
+            errB,
+            methodId,
+            settings.ditherPropagationRed,
+            settings.ditherPropagationGreen,
+            settings.ditherPropagationBlue,
+          );
         } else if (useOstro && dampFactor > 0.01) {
           const errR = (rMatch - closest.rgb[0]) * dampFactor;
           const errG = (gMatch - closest.rgb[1]) * dampFactor;
           const errB = (bMatch - closest.rgb[2]) * dampFactor;
           const intensity = (rMatch + gMatch + bMatch) / 3;
           const direction: 1 | -1 = leftToRight ? 1 : -1;
-          distributeErrorOstromoukhov(rgbFloat, width, height, x, y, errR, errG, errB, intensity, direction);
+          distributeErrorOstromoukhov(
+            rgbFloat,
+            width,
+            height,
+            x,
+            y,
+            errR,
+            errG,
+            errB,
+            intensity,
+            direction,
+            settings.ditherPropagationRed,
+            settings.ditherPropagationGreen,
+            settings.ditherPropagationBlue,
+          );
         }
       }
     }

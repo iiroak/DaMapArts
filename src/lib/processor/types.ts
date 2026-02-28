@@ -13,6 +13,9 @@ export interface ProcessorSettings {
   cropOffsetX: number;
   cropOffsetY: number;
   ditherMethod: string;
+  ditherPropagationRed: number;
+  ditherPropagationGreen: number;
+  ditherPropagationBlue: number;
   colorSpace: ColorSpace;
   brightness: number;
   contrast: number;

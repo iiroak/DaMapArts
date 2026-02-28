@@ -7,6 +7,7 @@
  */
 import { NBTWriter, TagTypes, type NBTTopLevel, type NBTCompound } from './nbt.js';
 import type { ColoursJSON, BlockVersionData, ToneKey } from '$lib/types/colours.js';
+import { getBlockNBTData } from '$lib/palette/colours.js';
 
 // ── Types ──
 
@@ -117,12 +118,11 @@ export class SchematicBuilder {
   private resolveBlockNBTData(colourSetId: string): BlockVersionData {
     const blockId = this.options.selectedBlocks[colourSetId];
     const block = this.options.coloursJSON[colourSetId].blocks[blockId];
-    let data = block.validVersions[this.options.version.MCVersion];
-    if (typeof data === 'string') {
-      // Reference like "&1.12.2"
-      data = block.validVersions[data.slice(1)];
+    const data = getBlockNBTData(block, this.options.version.MCVersion);
+    if (!data) {
+      throw new Error(`No valid block NBT data for colourSet ${colourSetId} in version ${this.options.version.MCVersion}`);
     }
-    return data as BlockVersionData;
+    return data;
   }
 
   private setNbtJsonPalette(): void {

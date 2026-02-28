@@ -57,6 +57,9 @@ export interface ProcessorSettings {
 
   // Dithering
   ditherMethod: string;
+  ditherPropagationRed: number;
+  ditherPropagationGreen: number;
+  ditherPropagationBlue: number;
   colorSpace: ColorSpace;
   betterColour: boolean;
 

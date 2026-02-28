@@ -82,6 +82,9 @@
 		void app.mapSizeX;
 		void app.mapSizeZ;
 		void app.ditherMethodId;
+		void app.ditherPropagationRed;
+		void app.ditherPropagationGreen;
+		void app.ditherPropagationBlue;
 		void app.colorSpace;
 		void app.modeId;
 		void app.staircasingId;
@@ -232,6 +235,9 @@
 			cropOffsetX: app.cropOffsetX,
 			cropOffsetY: app.cropOffsetY,
 			ditherMethod: app.ditherMethodId,
+			ditherPropagationRed: app.ditherPropagationRed,
+			ditherPropagationGreen: app.ditherPropagationGreen,
+			ditherPropagationBlue: app.ditherPropagationBlue,
 			colorSpace: app.colorSpace,
 			brightness: app.brightness,
 			contrast: app.contrast,

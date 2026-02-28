@@ -66,6 +66,10 @@ const es: Record<string, string> = {
   'processing.worker': 'Worker (CPU en segundo plano)',
   'processing.main': 'Hilo principal (legacy)',
   'processing.compare': 'Comparar todas las combinaciones',
+  'processing.channelPropagation': 'Propagación de error RGB',
+  'processing.redPropagation': 'Canal rojo',
+  'processing.greenPropagation': 'Canal verde',
+  'processing.bluePropagation': 'Canal azul',
 
   // ── ImageSettings ──
   'image.title': 'Imagen',

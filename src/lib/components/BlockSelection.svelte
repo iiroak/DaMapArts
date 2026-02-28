@@ -171,6 +171,34 @@
 		blocks: [number, number][]; // [colourSetId, presetIndex]
 	}
 
+	function decodePresetFromUrlParam(code: string): Preset | null {
+		try {
+			let base64 = code.trim().replace(/-/g, '+').replace(/_/g, '/');
+			while (base64.length % 4 !== 0) base64 += '=';
+			const decoded = JSON.parse(atob(base64));
+
+			let blocks: [number, number][];
+			let name = 'Shared Preset';
+
+			if (decoded && typeof decoded === 'object' && 'blocks' in decoded) {
+				blocks = decoded.blocks as [number, number][];
+				if (typeof decoded.name === 'string' && decoded.name.trim()) name = decoded.name;
+			} else if (Array.isArray(decoded)) {
+				blocks = decoded as [number, number][];
+			} else {
+				return null;
+			}
+
+			if (!Array.isArray(blocks) || !blocks.every((b) => Array.isArray(b) && b.length === 2)) {
+				return null;
+			}
+
+			return { name, blocks };
+		} catch {
+			return null;
+		}
+	}
+
 	// ── Preset state ──
 	let presets = $state<Preset[]>([]);
 	let selectedPresetName = $state('Everything');
@@ -217,6 +245,17 @@
 		// Apply the default preset on mount
 		const defaultPreset = presets.find((p) => p.name === selectedPresetName);
 		if (defaultPreset) applyPreset(defaultPreset);
+
+		// Optional URL import: ?preset=<base64>
+		const presetParam = new URLSearchParams(window.location.search).get('preset');
+		if (presetParam) {
+			const importedPreset = decodePresetFromUrlParam(presetParam);
+			if (importedPreset) {
+				selectedPresetName = importedPreset.name;
+				applyPreset(importedPreset);
+			}
+			window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+		}
 	});
 
 	function savePresetsToStorage() {

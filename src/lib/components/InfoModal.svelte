@@ -173,6 +173,9 @@
 						<p class="content-text">
 							Based on the original <strong>MapartCraft</strong> project. This rework adds GPU-accelerated processing, an advanced comparison engine, bilateral filtering, edge-masked dithering, profile management, and many other improvements.
 						</p>
+						<p class="content-text">
+							Special thanks to <strong>Mike (mike2b2t/mapartcraft)</strong> for his contribution to the MapartCraft ecosystem, including <strong>the latest technique updates and improvements</strong> that were ported into this rework.
+						</p>
 						<div class="info-divider"></div>
 						<h4 class="content-subtitle">Technology Stack</h4>
 						<ul class="info-list">

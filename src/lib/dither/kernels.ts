@@ -20,6 +20,24 @@ export const KERNELS: Record<string, DiffusionKernel> = {
     ],
     divisor: 16,
   },
+  'floyd-steinberg-20': {
+    entries: [
+      [1, 0, 7],
+      [-1, 1, 3],
+      [0, 1, 5],
+      [1, 1, 1],
+    ],
+    divisor: 20,
+  },
+  'floyd-steinberg-24': {
+    entries: [
+      [1, 0, 7],
+      [-1, 1, 3],
+      [0, 1, 5],
+      [1, 1, 1],
+    ],
+    divisor: 24,
+  },
   'min-avg-err': {
     entries: [
       [1, 0, 7], [2, 0, 5],
@@ -59,6 +77,30 @@ export const KERNELS: Record<string, DiffusionKernel> = {
     ],
     divisor: 8,
   },
+  'atkinson-6': {
+    entries: [
+      [1, 0, 1], [2, 0, 1],
+      [-1, 1, 1], [0, 1, 1], [1, 1, 1],
+      [0, 2, 1],
+    ],
+    divisor: 6,
+  },
+  'atkinson-10': {
+    entries: [
+      [1, 0, 1], [2, 0, 1],
+      [-1, 1, 1], [0, 1, 1], [1, 1, 1],
+      [0, 2, 1],
+    ],
+    divisor: 10,
+  },
+  'atkinson-12': {
+    entries: [
+      [1, 0, 1], [2, 0, 1],
+      [-1, 1, 1], [0, 1, 1], [1, 1, 1],
+      [0, 2, 1],
+    ],
+    divisor: 12,
+  },
   'jarvis-judice-ninke': {
     entries: [
       [1, 0, 7], [2, 0, 5],
@@ -75,12 +117,33 @@ export const KERNELS: Record<string, DiffusionKernel> = {
     ],
     divisor: 32,
   },
+  'sierra-2row': {
+    entries: [
+      [1, 0, 4], [2, 0, 3],
+      [-2, 1, 1], [-1, 1, 2], [0, 1, 3], [1, 1, 2], [2, 1, 1],
+    ],
+    divisor: 16,
+  },
+  fan: {
+    entries: [
+      [1, 0, 7],
+      [-2, 1, 1], [-1, 1, 3], [0, 1, 5],
+    ],
+    divisor: 16,
+  },
   'shiau-fan': {
     entries: [
       [1, 0, 4],
       [-1, 1, 1], [0, 1, 1], [1, 1, 2],
     ],
     divisor: 8,
+  },
+  'shiau-fan-2': {
+    entries: [
+      [2, 0, 8],
+      [-2, 1, 1], [-1, 1, 1], [0, 1, 2], [1, 1, 4],
+    ],
+    divisor: 16,
   },
 };
 
@@ -98,6 +161,9 @@ export function distributeError(
   errG: number,
   errB: number,
   kernelId: string,
+  propRed = 100,
+  propGreen = 100,
+  propBlue = 100,
 ): void {
   const kernelDef = KERNELS[kernelId];
   if (!kernelDef) return;
@@ -114,8 +180,8 @@ export function distributeError(
 
     const nIdx = (ny * width + nx) * 3;
     const factor = weight / divisor;
-    rgbFloat[nIdx] += errR * factor;
-    rgbFloat[nIdx + 1] += errG * factor;
-    rgbFloat[nIdx + 2] += errB * factor;
+    rgbFloat[nIdx] += errR * factor * (propRed / 100);
+    rgbFloat[nIdx + 1] += errG * factor * (propGreen / 100);
+    rgbFloat[nIdx + 2] += errB * factor * (propBlue / 100);
   }
 }

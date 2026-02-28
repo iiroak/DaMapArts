@@ -111,8 +111,9 @@ See `PIPELINE.md` for full details. High-level flow:
 This project is based on prior work from the MapartCraft ecosystem, especially:
 
 - [rebane2001/mapartcraft](https://github.com/rebane2001/mapartcraft)
+- GitHub: mike2b2t/mapartcraft
 
-Thanks to the original authors and contributors for the foundational ideas, data formats, and tooling that made this project possible.
+Thanks to the original authors and contributors, especially **Mike (mike2b2t/mapartcraft)**, for **foundational ideas**, **data formats**, **tooling**, and **the latest technique updates and improvements** adopted in this project.
 
 ## License
 
