@@ -5,6 +5,11 @@
 DaMapArts is a web application for converting images into **Minecraft map art**.
 It lets you upload an image, tune processing settings, quantize it to Minecraft block palettes with dithering, and export practical build outputs.
 
+## Live URLs
+
+- Primary: https://damaparts.iroak.cl/
+- Mirror: https://iiroak.github.io/DaMapArts
+
 ## Features
 
 - Image upload (`JPG`, `PNG`, `WebP`, `GIF`)

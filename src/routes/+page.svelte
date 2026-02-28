@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { getAppState } from '$lib/stores/index.js';
+	import { infoModal, type InfoTab } from '$lib/stores/infoModal.svelte.js';
 	import Header from '$lib/components/Header.svelte';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
 	import FilePanel from '$lib/components/FilePanel.svelte';
@@ -15,6 +17,30 @@
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 
 	const app = getAppState();
+
+	onMount(() => {
+		const info = new URLSearchParams(window.location.search).get('info');
+		if (!info) return;
+
+		const tabByParam: Record<string, InfoTab> = {
+			about: 'about',
+			technology: 'technology',
+			general: 'general',
+			preprocessing: 'preprocessing',
+			processing: 'processing',
+			blocks: 'blocks',
+			customblocks: 'customblocks',
+			export: 'export',
+			shortcuts: 'shortcuts',
+			faq: 'faq',
+		};
+
+		const tab = tabByParam[info];
+		if (!tab) return;
+
+		infoModal.openTab(tab);
+		window.history.replaceState({}, '', window.location.pathname);
+	});
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden">

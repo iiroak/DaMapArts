@@ -13,6 +13,13 @@
 	let expanded = $state(true);
 
 	function handleCompareSelect(ditherMethod: string, colorSpace: ColorSpace, bcs?: { brightness: number; contrast: number; saturation: number }) {
+		const transparencySnapshot = {
+			transparencyEnabled: app.transparencyEnabled,
+			transparencyTolerance: app.transparencyTolerance,
+			backgroundMode: app.backgroundMode,
+			backgroundColour: app.backgroundColour,
+		};
+
 		app.ditherMethodId = ditherMethod;
 		app.colorSpace = colorSpace;
 		if (bcs) {
@@ -20,6 +27,11 @@
 			app.contrast = bcs.contrast;
 			app.saturation = bcs.saturation;
 		}
+
+		app.transparencyEnabled = transparencySnapshot.transparencyEnabled;
+		app.transparencyTolerance = transparencySnapshot.transparencyTolerance;
+		app.backgroundMode = transparencySnapshot.backgroundMode;
+		app.backgroundColour = transparencySnapshot.backgroundColour;
 	}
 </script>
 

@@ -17,7 +17,7 @@
 		'cropMode', 'cropZoom', 'cropOffsetX', 'cropOffsetY',
 		'brightness', 'contrast', 'saturation',
 		'transparencyEnabled', 'transparencyTolerance',
-		'whereSupportBlocks', 'backgroundMode', 'supportBlock',
+		'whereSupportBlocks', 'backgroundMode', 'backgroundColour', 'supportBlock',
 		'processingMode',
 		'bilateralEnabled', 'bilateralSigmaSpace', 'bilateralSigmaColor', 'bilateralRadius',
 		'edgeMaskEnabled', 'edgeMaskThreshold', 'luminanceWeight',
