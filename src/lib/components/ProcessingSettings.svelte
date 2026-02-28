@@ -169,6 +169,15 @@
 				class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-sm"
 				bind:value={app.colorSpace}
 			>
+				<optgroup label="MapartCraft">
+					<option value="mapartcraft-default">MapartCraft Default</option>
+					<option value="euclidian">Euclidian</option>
+					<option value="cie76-lab65">CIE76 D65 (L*a*b*)</option>
+					<option value="cie76-lab50">CIE76 D50 (L*a*b*)</option>
+					<option value="ciede2000-lab65">CIEDE2000 D65 (L*a*b*)</option>
+					<option value="ciede2000-lab50">CIEDE2000 D50 (L*a*b*)</option>
+					<option value="hct">HCT (Hue, Chroma, Tone)</option>
+				</optgroup>
 				<optgroup label={t('processing.perceptual')}>
 					<option value="oklab">Oklab</option>
 					<option value="oklch">Oklch</option>

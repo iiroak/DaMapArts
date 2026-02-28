@@ -11,7 +11,17 @@ import type {
   RGB,
 } from '$lib/types/colours.js';
 import type { SupportedVersion, ColorSpace } from '$lib/types/settings.js';
-import { rgb2lab, rgb2oklab, rgb2oklch, rgb2ycbcr, rgb2hsl, rgbToHex } from './colorSpace.js';
+import {
+  rgb2lab,
+  rgb2lab50,
+  rgb2lab65,
+  rgb2hct,
+  rgb2oklab,
+  rgb2oklch,
+  rgb2ycbcr,
+  rgb2hsl,
+  rgbToHex,
+} from './colorSpace.js';
 
 function compareMcVersions(a: string, b: string): number {
   const aParts = a.split('.').map((part) => Number.parseInt(part, 10) || 0);
@@ -72,6 +82,9 @@ export function buildActivePalette(
         toneKey,
         rgb: rgb as RGB,
         lab: rgb2lab(rgb as RGB),
+        lab50: rgb2lab50(rgb as RGB),
+        lab65: rgb2lab65(rgb as RGB),
+        hct: rgb2hct(rgb as RGB),
         oklab: rgb2oklab(rgb as RGB),
         oklch: rgb2oklch(rgb as RGB),
         ycbcr: rgb2ycbcr(rgb as RGB),

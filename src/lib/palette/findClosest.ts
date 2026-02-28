@@ -4,7 +4,17 @@
  */
 import type { PaletteColor, RGB, LAB, Oklab } from '$lib/types/colours.js';
 import type { ColorSpace } from '$lib/types/settings.js';
-import { rgb2lab, rgb2oklab, rgb2oklch, rgb2ycbcr, rgb2hsl } from './colorSpace.js';
+import {
+  rgb2lab,
+  rgb2lab50,
+  rgb2lab65,
+  rgb2hct,
+  ciede2000DistanceSq,
+  rgb2oklab,
+  rgb2oklch,
+  rgb2ycbcr,
+  rgb2hsl,
+} from './colorSpace.js';
 
 /**
  * Find the closest palette color to a given RGB.
@@ -25,7 +35,7 @@ export function findClosestColor(
   let bestIdx = 0;
   let bestDist = Infinity;
 
-  if (colorSpace === 'rgb') {
+  if (colorSpace === 'rgb' || colorSpace === 'euclidian') {
     for (let i = 0; i < palette.length; i++) {
       const p = palette[i];
       const dr = rgb[0] - p.rgb[0];
@@ -38,7 +48,7 @@ export function findClosestColor(
         if (dist === 0) break;
       }
     }
-  } else if (colorSpace === 'lab') {
+  } else if (colorSpace === 'lab' || colorSpace === 'mapartcraft-default') {
     const wL = luminanceWeight;
     const lab = rgb2lab(rgb);
     for (let i = 0; i < palette.length; i++) {
@@ -46,6 +56,78 @@ export function findClosestColor(
       const dL = lab[0] - p.lab[0];
       const da = lab[1] - p.lab[1];
       const db = lab[2] - p.lab[2];
+      const dist = wL * dL * dL + da * da + db * db;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+        if (dist === 0) break;
+      }
+    }
+  } else if (colorSpace === 'cie76-lab50') {
+    const wL = luminanceWeight;
+    const lab = rgb2lab50(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab50 ?? rgb2lab50(p.rgb);
+      const dL = lab[0] - pLab[0];
+      const da = lab[1] - pLab[1];
+      const db = lab[2] - pLab[2];
+      const dist = wL * dL * dL + da * da + db * db;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+        if (dist === 0) break;
+      }
+    }
+  } else if (colorSpace === 'cie76-lab65') {
+    const wL = luminanceWeight;
+    const lab = rgb2lab65(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab65 ?? rgb2lab65(p.rgb);
+      const dL = lab[0] - pLab[0];
+      const da = lab[1] - pLab[1];
+      const db = lab[2] - pLab[2];
+      const dist = wL * dL * dL + da * da + db * db;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+        if (dist === 0) break;
+      }
+    }
+  } else if (colorSpace === 'ciede2000-lab50') {
+    const lab = rgb2lab50(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab50 ?? rgb2lab50(p.rgb);
+      const dist = ciede2000DistanceSq(lab, pLab);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+        if (dist === 0) break;
+      }
+    }
+  } else if (colorSpace === 'ciede2000-lab65') {
+    const lab = rgb2lab65(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab65 ?? rgb2lab65(p.rgb);
+      const dist = ciede2000DistanceSq(lab, pLab);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+        if (dist === 0) break;
+      }
+    }
+  } else if (colorSpace === 'hct') {
+    const wL = luminanceWeight;
+    const hct = rgb2hct(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pHct = p.hct ?? rgb2hct(p.rgb);
+      const dL = hct[0] - pHct[0];
+      const da = hct[1] - pHct[1];
+      const db = hct[2] - pHct[2];
       const dist = wL * dL * dL + da * da + db * db;
       if (dist < bestDist) {
         bestDist = dist;

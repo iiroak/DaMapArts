@@ -75,6 +75,10 @@ export interface PaletteColor {
   rgb: RGB;
   /** CIE L*a*b* for perceptual matching */
   lab: LAB;
+  /** CIE L*a*b* (D50) */
+  lab50?: LAB;
+  /** CIE L*a*b* (D65) */
+  lab65?: LAB;
   /** Oklab for even better perceptual matching */
   oklab: Oklab;
   /** Oklch — cylindrical Oklab (L, Chroma, Hue) */
@@ -83,6 +87,8 @@ export interface PaletteColor {
   ycbcr: YCbCr;
   /** HSL (H in radians, S & L in [0,1]) */
   hsl: HSL;
+  /** HCT-like coordinate used by reference fork */
+  hct?: LAB;
   /** CSS hex string */
   hex: string;
   /** Index in the active palette array */

@@ -19,7 +19,20 @@ export type MapMode = 'nbt' | 'mapdat';
 export type CropMode = 'off' | 'center' | 'manual';
 
 /** Color space for perceptual matching */
-export type ColorSpace = 'rgb' | 'lab' | 'oklab' | 'oklch' | 'ycbcr' | 'hsl';
+export type ColorSpace =
+  | 'mapartcraft-default'
+  | 'euclidian'
+  | 'cie76-lab65'
+  | 'cie76-lab50'
+  | 'ciede2000-lab65'
+  | 'ciede2000-lab50'
+  | 'hct'
+  | 'rgb'
+  | 'lab'
+  | 'oklab'
+  | 'oklch'
+  | 'ycbcr'
+  | 'hsl';
 
 /** Staircasing mode (flat 2D or various 3D modes) */
 export interface StaircaseMode {

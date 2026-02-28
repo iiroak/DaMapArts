@@ -13,6 +13,13 @@ import { rgb2lab, rgb2oklab, rgb2oklch, rgb2ycbcr, rgb2hsl } from '$lib/palette/
 import { VERTEX_SHADER, FRAGMENT_SHADER } from './shaders.js';
 
 const COLOR_SPACE_INDEX: Record<ColorSpace, number> = {
+  'mapartcraft-default': 1,
+  euclidian: 0,
+  'cie76-lab65': 1,
+  'cie76-lab50': 1,
+  'ciede2000-lab65': 1,
+  'ciede2000-lab50': 1,
+  hct: 1,
   rgb: 0,
   lab: 1,
   oklab: 2,
@@ -20,6 +27,8 @@ const COLOR_SPACE_INDEX: Record<ColorSpace, number> = {
   ycbcr: 4,
   hsl: 5,
 };
+
+const GPU_COLOR_SPACES = new Set<ColorSpace>(['rgb', 'lab', 'oklab', 'oklch', 'ycbcr', 'hsl']);
 
 /** Methods that can run on GPU (ordered + blue noise) */
 const GPU_METHODS = new Set([
@@ -34,6 +43,10 @@ const GPU_METHODS = new Set([
 
 export function canGPUProcess(ditherMethod: string): boolean {
   return GPU_METHODS.has(ditherMethod);
+}
+
+export function canGPUColorSpace(colorSpace: ColorSpace): boolean {
+  return GPU_COLOR_SPACES.has(colorSpace);
 }
 
 let _gl: WebGL2RenderingContext | null = null;

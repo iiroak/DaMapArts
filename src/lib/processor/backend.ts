@@ -157,7 +157,11 @@ export async function processAsync(
     } else {
       try {
         const gpu = await getGPUModule();
-        if (gpu.isWebGL2Supported() && gpu.canGPUProcess(methodId)) {
+        if (
+          gpu.isWebGL2Supported()
+          && gpu.canGPUProcess(methodId)
+          && gpu.canGPUColorSpace(input.settings.colorSpace)
+        ) {
           useGPU = true;
         }
       } catch {

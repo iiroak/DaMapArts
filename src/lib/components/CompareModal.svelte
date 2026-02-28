@@ -52,6 +52,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { getAppState } from '$lib/stores/index.js';
 	import { compareProgress } from '$lib/stores/compareProgress.svelte.js';
+	import { locale } from '$lib/stores/locale.svelte.js';
 	import { buildActivePalette, getToneKeysForStaircasing } from '$lib/palette/colours.js';
 	import { getSourcePixels } from '$lib/processor/crop.js';
 	import { processAsync, getPoolSize } from '$lib/processor/backend.js';
@@ -75,9 +76,31 @@
 	let { onSelect, onClose }: Props = $props();
 
 	const app = getAppState();
+	const t = locale.t;
 
-	const COLOR_SPACES: ColorSpace[] = ['oklab', 'oklch', 'lab', 'ycbcr', 'rgb', 'hsl'];
+	const COLOR_SPACES: ColorSpace[] = [
+		'mapartcraft-default',
+		'euclidian',
+		'cie76-lab65',
+		'cie76-lab50',
+		'ciede2000-lab65',
+		'ciede2000-lab50',
+		'hct',
+		'oklab',
+		'oklch',
+		'lab',
+		'ycbcr',
+		'rgb',
+		'hsl',
+	];
 	const CS_LABEL: Record<ColorSpace, string> = {
+		'mapartcraft-default': 'MapartCraft Default',
+		'euclidian': 'Euclidian',
+		'cie76-lab65': 'CIE76 D65',
+		'cie76-lab50': 'CIE76 D50',
+		'ciede2000-lab65': 'CIEDE2000 D65',
+		'ciede2000-lab50': 'CIEDE2000 D50',
+		hct: 'HCT',
 		oklab: 'Oklab',
 		oklch: 'Oklch',
 		lab: 'CIELAB',
@@ -715,16 +738,16 @@
 		class="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-[var(--color-border)] bg-[var(--color-bg)] px-6 py-4"
 	>
 		<div class="min-w-0">
-			<h2 class="text-lg font-semibold">Compare Combinations</h2>
+			<h2 class="text-lg font-semibold">{t('compare.modalTitle')}</h2>
 			<p class="mt-0.5 text-xs text-[var(--color-muted)]">
 				{#if !started}
-					Configure render mode and start
+					{t('compare.configureStart')}
 				{:else if progress < total && paused}
-					Paused — {progress}/{total}
+					{t('compare.paused')} — {progress}/{total}
 				{:else if progress < total}
-					Generating {progress}/{total} ({activeWorkers} workers)
+					{t('compare.generating')} {progress}/{total} ({activeWorkers} {t('compare.workers').toLowerCase()})
 				{:else}
-					{total} combinations — click to apply
+					{total} {t('compare.combinations')} — {t('compare.clickApply')}
 				{/if}
 			</p>
 		</div>
@@ -749,20 +772,20 @@
 						<path d="M21 12a9 9 0 1 1-6.219-8.56" stroke-linecap="round" />
 					</svg>
 				{:else}
-					<span class="text-xs font-medium text-[var(--color-primary)]">Paused</span>
+					<span class="text-xs font-medium text-[var(--color-primary)]">{t('compare.paused')}</span>
 				{/if}
 				<button
 					onclick={paused ? resumeGeneration : pauseGeneration}
 					class="rounded-lg bg-[var(--color-primary)] px-2.5 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
-					{paused ? 'Resume' : 'Pause'}
+					{paused ? t('compare.resume') : t('compare.pause')}
 				</button>
 				{#if paused}
 					<button
 						onclick={stopGeneration}
 						class="rounded-lg bg-[var(--color-danger)] px-2.5 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
 					>
-						Stop
+						{t('compare.stop')}
 					</button>
 				{/if}
 			</div>
@@ -772,7 +795,7 @@
 			{#if started}
 				<label class="flex items-center gap-1.5 text-xs text-[var(--color-muted)] cursor-pointer select-none mr-4">
 					<input type="checkbox" bind:checked={sortByFidelity} class="accent-[var(--color-primary)]" />
-					Sort by Fidelity
+					{t('compare.sortByFidelity')}
 				</label>
 				<div class="flex items-center gap-2">
 					<input
@@ -792,13 +815,13 @@
 					onclick={reconfigure}
 					class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs transition-colors hover:bg-white/5"
 				>
-					Reconfigure
+					{t('compare.reconfigure')}
 				</button>
 			{/if}
 
 			<button
 				onclick={close}
-				aria-label="Close"
+				aria-label={t('compare.close')}
 				class="rounded-lg p-2 transition-colors hover:bg-white/5"
 			>
 				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -815,7 +838,7 @@
 				<!-- Render Mode -->
 				<div class="space-y-3">
 					<label class="block">
-						<span class="mb-1 block text-xs font-semibold text-[var(--color-muted)]">Render Mode</span>
+						<span class="mb-1 block text-xs font-semibold text-[var(--color-muted)]">{t('compare.renderMode')}</span>
 						<div class="flex gap-2">
 							<button
 								class="flex-1 rounded border px-3 py-2 text-sm transition-colors {renderMode === 'preview'
@@ -823,7 +846,7 @@
 									: 'border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-white/5'}"
 								onclick={() => (renderMode = 'preview')}
 							>
-								Preview Square
+								{t('compare.previewSquare')}
 							</button>
 							<button
 								class="flex-1 rounded border px-3 py-2 text-sm transition-colors {renderMode === 'full'
@@ -831,34 +854,34 @@
 									: 'border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-white/5'}"
 								onclick={() => (renderMode = 'full')}
 							>
-								Full Image
+								{t('compare.fullImage')}
 							</button>
 						</div>
 					</label>
 
 					{#if renderMode === 'preview'}
 						<label class="block">
-							<span class="mb-1 block text-xs text-[var(--color-muted)]">Preview Size</span>
+							<span class="mb-1 block text-xs text-[var(--color-muted)]">{t('compare.previewSize')}</span>
 							<select
 								class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-sm"
 								bind:value={previewSize}
 							>
-								<option value={1}>128 × 128 (1 map)</option>
-								<option value={2}>256 × 256 (4 maps)</option>
-								<option value={3}>384 × 384 (9 maps)</option>
+								<option value={1}>128 × 128 (1 {t('map.mapCount', { count: 1 }).toLowerCase()})</option>
+								<option value={2}>256 × 256 (4 {t('map.mapCountPlural', { count: 4 }).toLowerCase()})</option>
+								<option value={3}>384 × 384 (9 {t('map.mapCountPlural', { count: 9 }).toLowerCase()})</option>
 							</select>
 						</label>
 					{/if}
 
 					<p class="text-xs text-[var(--color-muted)]">
 						{#if renderMode === 'full'}
-							Will render full {app.mapSizeX * 128}×{app.mapSizeZ * 128} image per combo.
+							{t('compare.renderFull')} {app.mapSizeX * 128}×{app.mapSizeZ * 128} {t('compare.imagePerCombo')}.
 							{#if app.mapSizeX * app.mapSizeZ > 4}
 								<br />
-								<strong class="text-yellow-400">Warning: Large image — this may take a while.</strong>
+								<strong class="text-yellow-400">{t('compare.warningLargeImage')}</strong>
 							{/if}
 						{:else}
-							Will render a {previewSize * 128}×{previewSize * 128} center crop per combo.
+							{t('compare.renderCrop')} {previewSize * 128}×{previewSize * 128} {t('compare.centerCropPerCombo')}.
 						{/if}
 					</p>
 				</div>
@@ -869,7 +892,7 @@
 						onclick={() => (advancedExpanded = !advancedExpanded)}
 						class="flex w-full items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
 					>
-						<span>Advanced — BCS + RGB Sweep {(hasBCSSweep || hasPropagationSweep) ? '(active)' : ''}</span>
+						<span>{t('compare.advancedTitle')} {(hasBCSSweep || hasPropagationSweep) ? `(${t('compare.active')})` : ''}</span>
 						<svg
 							class="h-4 w-4 transition-transform {advancedExpanded ? 'rotate-180' : ''}"
 							viewBox="0 0 24 24"
@@ -884,24 +907,22 @@
 					{#if advancedExpanded}
 						<div class="space-y-3 border-t border-[var(--color-border)] px-4 py-3">
 							<p class="text-xs text-[var(--color-muted)]">
-								Search for optimal brightness, contrast, and saturation by sweeping ranges around the current values.
+								{t('compare.bcsSweepDesc')}
 								{#if hasBCSSweep}
-									Fidelity is measured against the original image (neutral BCS).
+									{t('compare.fidelityNeutral')}
 								{/if}
 							</p>
-							<p class="text-xs text-[var(--color-muted)]">
-								RGB propagation sweep tests channel error diffusion strengths around current values.
-							</p>
+							<p class="text-xs text-[var(--color-muted)]">{t('compare.rgbSweepDesc')}</p>
 
 							<!-- Fix dither / color space -->
 							<div class="flex gap-4">
 								<label class="flex items-center gap-2 text-xs">
 									<input type="checkbox" bind:checked={fixDither} class="accent-[var(--color-primary)]" />
-									Fix dither to current ({app.ditherMethodId})
+									{t('compare.fixDither')} ({app.ditherMethodId})
 								</label>
 								<label class="flex items-center gap-2 text-xs">
 									<input type="checkbox" bind:checked={fixColorSpace} class="accent-[var(--color-primary)]" />
-									Fix color space to current ({app.colorSpace})
+									{t('compare.fixColorSpace')} ({app.colorSpace})
 								</label>
 							</div>
 
@@ -909,9 +930,9 @@
 							<div class="space-y-1">
 								<label class="flex items-center gap-2 text-xs font-medium">
 									<input type="checkbox" bind:checked={sweepBrightness.enabled} class="accent-[var(--color-primary)]" />
-									Brightness
+									{t('image.brightness').replace(':', '')}
 									<span class="text-[var(--color-muted)]">
-										(current: {app.brightness}% | {bcsPreviewB.length} values: {bcsPreviewB[0]}–{bcsPreviewB[bcsPreviewB.length - 1]}%)
+										({t('compare.current')}: {app.brightness}% | {bcsPreviewB.length} {t('compare.values')}: {bcsPreviewB[0]}–{bcsPreviewB[bcsPreviewB.length - 1]}%)
 									</span>
 								</label>
 								{#if sweepBrightness.enabled}
@@ -926,7 +947,7 @@
 											/>%
 										</label>
 										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-											Step<input
+											{t('compare.step')}<input
 												type="number"
 												min="1"
 												max="25"
@@ -942,9 +963,9 @@
 							<div class="space-y-1">
 								<label class="flex items-center gap-2 text-xs font-medium">
 									<input type="checkbox" bind:checked={sweepContrast.enabled} class="accent-[var(--color-primary)]" />
-									Contrast
+									{t('image.contrast').replace(':', '')}
 									<span class="text-[var(--color-muted)]">
-										(current: {app.contrast}% | {bcsPreviewC.length} values: {bcsPreviewC[0]}–{bcsPreviewC[bcsPreviewC.length - 1]}%)
+										({t('compare.current')}: {app.contrast}% | {bcsPreviewC.length} {t('compare.values')}: {bcsPreviewC[0]}–{bcsPreviewC[bcsPreviewC.length - 1]}%)
 									</span>
 								</label>
 								{#if sweepContrast.enabled}
@@ -959,7 +980,7 @@
 											/>%
 										</label>
 										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-											Step<input
+											{t('compare.step')}<input
 												type="number"
 												min="1"
 												max="25"
@@ -975,9 +996,9 @@
 							<div class="space-y-1">
 								<label class="flex items-center gap-2 text-xs font-medium">
 									<input type="checkbox" bind:checked={sweepSaturation.enabled} class="accent-[var(--color-primary)]" />
-									Saturation
+									{t('image.saturation').replace(':', '')}
 									<span class="text-[var(--color-muted)]">
-										(current: {app.saturation}% | {bcsPreviewS.length} values: {bcsPreviewS[0]}–{bcsPreviewS[bcsPreviewS.length - 1]}%)
+										({t('compare.current')}: {app.saturation}% | {bcsPreviewS.length} {t('compare.values')}: {bcsPreviewS[0]}–{bcsPreviewS[bcsPreviewS.length - 1]}%)
 									</span>
 								</label>
 								{#if sweepSaturation.enabled}
@@ -992,7 +1013,7 @@
 											/>%
 										</label>
 										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-											Step<input
+											{t('compare.step')}<input
 												type="number"
 												min="1"
 												max="50"
@@ -1008,9 +1029,9 @@
 							<div class="space-y-1">
 								<label class="flex items-center gap-2 text-xs font-medium">
 									<input type="checkbox" bind:checked={sweepPropagationRed.enabled} class="accent-[var(--color-primary)]" />
-									Red propagation
+									{t('compare.redPropagation')}
 									<span class="text-[var(--color-muted)]">
-										(current: {app.ditherPropagationRed}% | {propPreviewR.length} values: {propPreviewR[0]}–{propPreviewR[propPreviewR.length - 1]}%)
+										({t('compare.current')}: {app.ditherPropagationRed}% | {propPreviewR.length} {t('compare.values')}: {propPreviewR[0]}–{propPreviewR[propPreviewR.length - 1]}%)
 									</span>
 								</label>
 								{#if sweepPropagationRed.enabled}
@@ -1019,7 +1040,7 @@
 											±<input type="number" min="1" max="100" bind:value={sweepPropagationRed.range} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
 										</label>
 										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-											Step<input type="number" min="1" max="100" bind:value={sweepPropagationRed.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+											{t('compare.step')}<input type="number" min="1" max="100" bind:value={sweepPropagationRed.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
 										</label>
 									</div>
 								{/if}
@@ -1029,9 +1050,9 @@
 							<div class="space-y-1">
 								<label class="flex items-center gap-2 text-xs font-medium">
 									<input type="checkbox" bind:checked={sweepPropagationGreen.enabled} class="accent-[var(--color-primary)]" />
-									Green propagation
+									{t('compare.greenPropagation')}
 									<span class="text-[var(--color-muted)]">
-										(current: {app.ditherPropagationGreen}% | {propPreviewG.length} values: {propPreviewG[0]}–{propPreviewG[propPreviewG.length - 1]}%)
+										({t('compare.current')}: {app.ditherPropagationGreen}% | {propPreviewG.length} {t('compare.values')}: {propPreviewG[0]}–{propPreviewG[propPreviewG.length - 1]}%)
 									</span>
 								</label>
 								{#if sweepPropagationGreen.enabled}
@@ -1040,7 +1061,7 @@
 											±<input type="number" min="1" max="100" bind:value={sweepPropagationGreen.range} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
 										</label>
 										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-											Step<input type="number" min="1" max="100" bind:value={sweepPropagationGreen.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+											{t('compare.step')}<input type="number" min="1" max="100" bind:value={sweepPropagationGreen.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
 										</label>
 									</div>
 								{/if}
@@ -1050,9 +1071,9 @@
 							<div class="space-y-1">
 								<label class="flex items-center gap-2 text-xs font-medium">
 									<input type="checkbox" bind:checked={sweepPropagationBlue.enabled} class="accent-[var(--color-primary)]" />
-									Blue propagation
+									{t('compare.bluePropagation')}
 									<span class="text-[var(--color-muted)]">
-										(current: {app.ditherPropagationBlue}% | {propPreviewB.length} values: {propPreviewB[0]}–{propPreviewB[propPreviewB.length - 1]}%)
+										({t('compare.current')}: {app.ditherPropagationBlue}% | {propPreviewB.length} {t('compare.values')}: {propPreviewB[0]}–{propPreviewB[propPreviewB.length - 1]}%)
 									</span>
 								</label>
 								{#if sweepPropagationBlue.enabled}
@@ -1061,7 +1082,7 @@
 											±<input type="number" min="1" max="100" bind:value={sweepPropagationBlue.range} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
 										</label>
 										<label class="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-											Step<input type="number" min="1" max="100" bind:value={sweepPropagationBlue.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
+											{t('compare.step')}<input type="number" min="1" max="100" bind:value={sweepPropagationBlue.step} class="w-12 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-center text-[11px]" />%
 										</label>
 									</div>
 								{/if}
@@ -1072,26 +1093,26 @@
 
 				<!-- Summary & Start -->
 				<div class="space-y-2">
-					<p class="text-xs text-[var(--color-muted)]">
+						<p class="text-xs text-[var(--color-muted)]">
 						{#if hasBCSSweep || hasPropagationSweep}
 							{@const ditherCount = fixDither ? 1 : methods.length}
 							{@const csCount = fixColorSpace ? 1 : COLOR_SPACES.length}
-							{ditherCount} dither{ditherCount > 1 ? 's' : ''} × {csCount} space{csCount > 1 ? 's' : ''}
-							{#if hasBCSSweep} × BCS sweep{/if}
-							{#if hasPropagationSweep} × RGB sweep{/if}
+								{ditherCount} {ditherCount > 1 ? t('compare.ditherPlural') : t('compare.ditherSingular')} × {csCount} {csCount > 1 ? t('compare.spacePlural') : t('compare.spaceSingular')}
+								{#if hasBCSSweep} × {t('compare.bcsSweep')}{/if}
+							{#if hasPropagationSweep} × {t('compare.rgbSweep')}{/if}
 						{:else}
-							{methods.length} dithers × {COLOR_SPACES.length} spaces
+								{methods.length} {t('compare.dithers')} × {COLOR_SPACES.length} {t('compare.spaces')}
 						{/if}
 					</p>
 
 					{#if totalCombos > 1000}
 						<p class="text-xs font-medium text-yellow-400">
-							Warning: {totalCombos.toLocaleString()} combinations — this will take a long time.
-							Consider using Preview mode or fixing dither/color space.
+							{t('compare.warningManyCombos1')} {totalCombos.toLocaleString()} {t('compare.combinations')} — {t('compare.warningManyCombos2')}
+							{t('compare.warningManyCombos3')}
 						</p>
 					{:else if totalCombos > 300}
 						<p class="text-xs text-yellow-400/70">
-							{totalCombos.toLocaleString()} combinations — may take a few minutes.
+							{totalCombos.toLocaleString()} {t('compare.combinations')} — {t('compare.mayTakeMinutes')}.
 						</p>
 					{/if}
 				</div>
@@ -1100,7 +1121,7 @@
 				<div class="space-y-1.5">
 					<div class="flex items-center gap-3">
 						<label class="flex items-center gap-2 text-xs text-[var(--color-muted)]">
-							Workers
+							{t('compare.workers')}
 							<input
 								type="number"
 								min="1"
@@ -1110,7 +1131,7 @@
 							/>
 						</label>
 						<span class="text-[10px] text-[var(--color-muted)]">
-							{navigator?.hardwareConcurrency ?? '?'} cores — {maxWorkers > poolSize ? `capped at ${poolSize}` : `${maxWorkers} worker${maxWorkers > 1 ? 's' : ''}`}
+							{navigator?.hardwareConcurrency ?? '?'} {t('compare.cores')} — {maxWorkers > poolSize ? `${t('compare.cappedAt')} ${poolSize}` : `${maxWorkers} ${maxWorkers > 1 ? t('compare.workerPlural') : t('compare.workerSingular')}`}
 						</span>
 					</div>
 					<p class="text-[10px] text-[var(--color-muted)] leading-relaxed">
@@ -1119,7 +1140,7 @@
 							<line x1="12" y1="9" x2="12" y2="13" stroke-linecap="round" />
 							<line x1="12" y1="17" x2="12.01" y2="17" />
 						</svg>
-						Using too many workers may cause the browser to lag. Default is ~70 % of your cores.
+						{t('compare.workerWarningExtended')}
 					</p>
 					{#if isFirefox}
 						<p class="text-xs text-orange-400/80">
@@ -1128,7 +1149,7 @@
 								<line x1="12" y1="9" x2="12" y2="13" stroke-linecap="round" />
 								<line x1="12" y1="17" x2="12.01" y2="17" />
 							</svg>
-							Firefox limits <code class="font-mono">hardwareConcurrency</code> to 8 cores. Use Chrome/Chromium for full multi-core performance.
+							{t('compare.firefoxWarning')}
 						</p>
 					{/if}
 				</div>
@@ -1137,7 +1158,7 @@
 					onclick={startGeneration}
 					class="w-full rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
 				>
-					Start Comparison ({totalCombos.toLocaleString()} combos)
+					{t('compare.startComparison')} ({totalCombos.toLocaleString()} {t('compare.combos')})
 				</button>
 			</div>
 		</div>
@@ -1182,7 +1203,7 @@
 									<span
 										class="text-xs font-medium text-white opacity-0 drop-shadow-lg transition-opacity group-hover:opacity-100"
 									>
-										Apply
+										{t('compare.apply')}
 									</span>
 								</div>
 								{#if isCurrent}
@@ -1223,17 +1244,17 @@
 							</p>
 							{#if hasBCSSweep}
 								<p class="text-[9px] tabular-nums text-[var(--color-muted)]">
-									B:{combo.brightness}% C:{combo.contrast}% S:{combo.saturation}%
+									{t('compare.brightnessLabel')}: {combo.brightness}% {t('compare.contrastLabel')}: {combo.contrast}% {t('compare.saturationLabel')}: {combo.saturation}%
 								</p>
 							{/if}
 							{#if hasPropagationSweep}
 								<p class="text-[9px] tabular-nums text-[var(--color-muted)]">
-									R:{combo.propagationRed}% G:{combo.propagationGreen}% B:{combo.propagationBlue}%
+									{t('compare.redLabel')}: {combo.propagationRed}% {t('compare.greenLabel')}: {combo.propagationGreen}% {t('compare.blueLabel')}: {combo.propagationBlue}%
 								</p>
 							{/if}
 							{#if combo.fidelity !== null}
 								<p class="mt-0.5 text-[11px] font-semibold {isBest ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}">
-									{combo.fidelity?.toFixed(3)}% fidelity
+									{combo.fidelity?.toFixed(3)}% {t('compare.fidelity')}
 								</p>
 							{/if}
 						</div>

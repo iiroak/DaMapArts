@@ -10,7 +10,17 @@ import type { PaletteColor, ToneKey, RGB } from '$lib/types/colours.js';
 import type { ColorSpace } from '$lib/types/settings.js';
 import type { ProcessorSettings, PixelEntry, MapSection } from './types.js';
 import { findClosestColor } from '$lib/palette/findClosest.js';
-import { rgb2lab, rgb2oklab, rgb2oklch, rgb2ycbcr, rgb2hsl } from '$lib/palette/colorSpace.js';
+import {
+  rgb2lab,
+  rgb2lab50,
+  rgb2lab65,
+  rgb2hct,
+  ciede2000DistanceSq,
+  rgb2oklab,
+  rgb2oklch,
+  rgb2ycbcr,
+  rgb2hsl,
+} from '$lib/palette/colorSpace.js';
 import {
   distributeError,
   isErrorDiffusion,
@@ -55,7 +65,7 @@ function findClosest2(
   let dist1 = Infinity;
   let dist2 = Infinity;
 
-  if (colorSpace === 'rgb') {
+  if (colorSpace === 'rgb' || colorSpace === 'euclidian') {
     for (let i = 0; i < palette.length; i++) {
       const p = palette[i];
       const dr = rgb[0] - p.rgb[0];
@@ -69,7 +79,7 @@ function findClosest2(
         dist2 = d; best2Idx = i;
       }
     }
-  } else if (colorSpace === 'lab') {
+  } else if (colorSpace === 'lab' || colorSpace === 'mapartcraft-default') {
     const wL = luminanceWeight;
     const lab = rgb2lab(rgb);
     for (let i = 0; i < palette.length; i++) {
@@ -78,6 +88,83 @@ function findClosest2(
       const da = lab[1] - p.lab[1];
       const db = lab[2] - p.lab[2];
       const d = wL * dL * dL + da * da + db * db;
+      if (d < dist1) {
+        dist2 = dist1; best2Idx = best1Idx;
+        dist1 = d; best1Idx = i;
+      } else if (d < dist2) {
+        dist2 = d; best2Idx = i;
+      }
+    }
+  } else if (colorSpace === 'cie76-lab50') {
+    const wL = luminanceWeight;
+    const lab = rgb2lab50(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab50 ?? rgb2lab50(p.rgb);
+      const dL = lab[0] - pLab[0];
+      const da = lab[1] - pLab[1];
+      const db = lab[2] - pLab[2];
+      const d = wL * dL * dL + da * da + db * db;
+      if (d < dist1) {
+        dist2 = dist1; best2Idx = best1Idx;
+        dist1 = d; best1Idx = i;
+      } else if (d < dist2) {
+        dist2 = d; best2Idx = i;
+      }
+    }
+  } else if (colorSpace === 'cie76-lab65') {
+    const wL = luminanceWeight;
+    const lab = rgb2lab65(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab65 ?? rgb2lab65(p.rgb);
+      const dL = lab[0] - pLab[0];
+      const da = lab[1] - pLab[1];
+      const db = lab[2] - pLab[2];
+      const d = wL * dL * dL + da * da + db * db;
+      if (d < dist1) {
+        dist2 = dist1; best2Idx = best1Idx;
+        dist1 = d; best1Idx = i;
+      } else if (d < dist2) {
+        dist2 = d; best2Idx = i;
+      }
+    }
+  } else if (colorSpace === 'ciede2000-lab50') {
+    const lab = rgb2lab50(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab50 ?? rgb2lab50(p.rgb);
+      const d = ciede2000DistanceSq(lab, pLab);
+      if (d < dist1) {
+        dist2 = dist1; best2Idx = best1Idx;
+        dist1 = d; best1Idx = i;
+      } else if (d < dist2) {
+        dist2 = d; best2Idx = i;
+      }
+    }
+  } else if (colorSpace === 'ciede2000-lab65') {
+    const lab = rgb2lab65(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pLab = p.lab65 ?? rgb2lab65(p.rgb);
+      const d = ciede2000DistanceSq(lab, pLab);
+      if (d < dist1) {
+        dist2 = dist1; best2Idx = best1Idx;
+        dist1 = d; best1Idx = i;
+      } else if (d < dist2) {
+        dist2 = d; best2Idx = i;
+      }
+    }
+  } else if (colorSpace === 'hct') {
+    const wL = luminanceWeight;
+    const hct = rgb2hct(rgb);
+    for (let i = 0; i < palette.length; i++) {
+      const p = palette[i];
+      const pHct = p.hct ?? rgb2hct(p.rgb);
+      const dL = hct[0] - pHct[0];
+      const da = hct[1] - pHct[1];
+      const dB = hct[2] - pHct[2];
+      const d = wL * dL * dL + da * da + dB * dB;
       if (d < dist1) {
         dist2 = dist1; best2Idx = best1Idx;
         dist1 = d; best1Idx = i;
