@@ -1,5 +1,7 @@
 # DaMapArts
 
+![DaMapArts Preview](images/preview.png)
+
 DaMapArts is a web application for converting images into **Minecraft map art**.
 It lets you upload an image, tune processing settings, quantize it to Minecraft block palettes with dithering, and export practical build outputs.
 
@@ -48,6 +50,20 @@ pnpm preview      # preview production build locally
 pnpm check        # type-check + svelte-check
 pnpm check:watch  # watch mode for checks
 ```
+
+## GitHub Pages (Project Page)
+
+This repository is configured for GitHub Pages deployment via GitHub Actions.
+
+- Workflow file: `.github/workflows/deploy.yml`
+- Output directory: `build`
+- Expected URL type: `https://<username>.github.io/<repository>`
+- `BASE_PATH` is set automatically in CI to `/<repository>`
+
+In GitHub repository settings, set:
+
+1. **Pages → Build and deployment → Source** = `GitHub Actions`
+2. Keep default branch as `main`
 
 ## Project Structure
 
