@@ -29,11 +29,14 @@
 	});
 
 	// Where support blocks options
-	const supportModes = Object.entries(whereSupportBlocksModes).map(([key, val]: [string, any]) => ({
-		key,
-		uniqueId: val.uniqueId,
-		label: formatStairLabel(key),
-	}));
+	const supportModes = Object.entries(whereSupportBlocksModes)
+		.filter(([key]) => key !== 'WATER')
+		.map(([key, val]: [string, any]) => ({
+			key,
+			uniqueId: val.uniqueId,
+			label: formatStairLabel(key),
+		}));
+
 
 	// Mode check: 0 = NBT (schematic)
 	function isNBTMode(): boolean {
@@ -145,6 +148,14 @@
 						<option value={sb.value}>{sb.label}</option>
 					{/each}
 				</select>
+			</label>
+
+			<label class="mt-1 flex items-center gap-2">
+				<input
+					type="checkbox"
+					bind:checked={app.waterSupportEnabled}
+				/>
+				<span class="text-xs text-[var(--color-muted)]">Extra support around water</span>
 			</label>
 		{/if}
 	</div>

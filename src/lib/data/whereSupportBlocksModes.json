@@ -14,5 +14,9 @@
   "ALL_DOUBLE_OPTIMIZED": {
     "uniqueId": 3,
     "localeKey": "MAP-SETTINGS/NBT-SPECIFIC/WHERE-SUPPORT-BLOCKS/ALL-DOUBLE-OPTIMIZED"
+  },
+  "WATER": {
+    "uniqueId": 4,
+    "localeKey": "MAP-SETTINGS/NBT-SPECIFIC/WHERE-SUPPORT-BLOCKS/WATER"
   }
 }

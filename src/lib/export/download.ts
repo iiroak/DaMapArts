@@ -99,6 +99,8 @@ export interface ExportSettings {
   staircasingId: number;
   whereSupportBlocks: number;
   supportBlock: string;
+  waterSupportEnabled: boolean;
+  normalizeExport: boolean;
   selectedBlocks: Record<string, string>;
   mapSizeX: number;
   mapSizeZ: number;
@@ -133,6 +135,8 @@ export async function exportNBTJoined(
     staircasingId: settings.staircasingId,
     whereSupportBlocks: settings.whereSupportBlocks,
     supportBlock: settings.supportBlock,
+    waterSupportEnabled: settings.waterSupportEnabled,
+    normalizeExport: settings.normalizeExport,
     selectedBlocks: settings.selectedBlocks,
   });
 
@@ -175,6 +179,8 @@ export async function exportNBTSplit(
         staircasingId: settings.staircasingId,
         whereSupportBlocks: settings.whereSupportBlocks,
         supportBlock: settings.supportBlock,
+        waterSupportEnabled: settings.waterSupportEnabled,
+        normalizeExport: settings.normalizeExport,
         selectedBlocks: settings.selectedBlocks,
       });
 
@@ -302,10 +308,46 @@ export function buildNBTForViewer(
     staircasingId: settings.staircasingId,
     whereSupportBlocks: settings.whereSupportBlocks,
     supportBlock: settings.supportBlock,
+    waterSupportEnabled: settings.waterSupportEnabled,
+    normalizeExport: settings.normalizeExport,
     selectedBlocks: settings.selectedBlocks,
   });
 
   return builder.build(onProgress);
+}
+
+/**
+ * Compute real material counts from the final placed schematic blocks (joined NBT).
+ * Includes support blocks and water-support additions.
+ */
+export function computeRealNBTMaterialCounts(
+  pixelEntries: PixelEntry[],
+  settings: ExportSettings,
+  onProgress?: (percent: number) => void,
+): Record<string, number> {
+  const totalWidth = settings.mapSizeX * 128;
+  const { layouts, materialsPerMap } = buildColoursLayouts(
+    pixelEntries,
+    settings.mapSizeX,
+    settings.mapSizeZ,
+    totalWidth,
+  );
+
+  const merged = mergeMaps(layouts, materialsPerMap, settings.mapSizeX, settings.mapSizeZ);
+
+  const builder = new SchematicBuilder(merged, {
+    coloursJSON: settings.coloursJSON,
+    version: settings.version,
+    staircasingId: settings.staircasingId,
+    whereSupportBlocks: settings.whereSupportBlocks,
+    supportBlock: settings.supportBlock,
+    waterSupportEnabled: settings.waterSupportEnabled,
+    normalizeExport: settings.normalizeExport,
+    selectedBlocks: settings.selectedBlocks,
+  });
+
+  builder.build(onProgress);
+  return builder.getBuiltMaterialCounts();
 }
 
 // ── Internal helpers ──

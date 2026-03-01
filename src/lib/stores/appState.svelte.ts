@@ -74,6 +74,8 @@ export interface AppState {
   // Support blocks
   whereSupportBlocks: number;
   supportBlock: string;
+  waterSupportEnabled: boolean;
+  normalizeExport: boolean;
 
   // Background
   backgroundMode: number;
@@ -197,6 +199,8 @@ export function createAppState(): AppState {
     // Support blocks
     whereSupportBlocks: 0,
     supportBlock: 'netherrack',
+    waterSupportEnabled: false,
+    normalizeExport: true,
 
     // Background
     backgroundMode: 0,

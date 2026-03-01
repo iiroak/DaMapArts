@@ -13,5 +13,6 @@ export {
   exportMapdatSplit,
   exportMapdatZip,
   buildNBTForViewer,
+  computeRealNBTMaterialCounts,
 } from './download.js';
 export type { ExportSettings } from './download.js';

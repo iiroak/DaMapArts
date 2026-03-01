@@ -3,6 +3,9 @@
 	import { getAppState } from '$lib/stores/index.js';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
+	import { computeRealNBTMaterialCounts, type ExportSettings } from '$lib/export/index.js';
+	import supportedVersions from '$lib/data/supportedVersions.json';
+	import type { ColoursJSON } from '$lib/types/colours.js';
 
 	const app = getAppState();
 	const t = locale.t;
@@ -11,14 +14,83 @@
 	let perMapMode = $state(false);
 	let selectedMapX = $state(0);
 	let selectedMapZ = $state(0);
+	let realNbtCounts = $state<Record<string, number> | null>(null);
+	let realNbtTotal = $state<number | null>(null);
+	let realNbtLoading = $state(false);
+
+	function getVersion() {
+		for (const v of Object.values(supportedVersions)) {
+			if (v.MCVersion === app.selectedVersion) return v;
+		}
+		return Object.values(supportedVersions)[Object.values(supportedVersions).length - 1];
+	}
+
+	function buildExportSettings(): ExportSettings {
+		return {
+			coloursJSON: app.coloursJSON as unknown as ColoursJSON,
+			version: getVersion(),
+			staircasingId: app.staircasingId,
+			whereSupportBlocks: app.whereSupportBlocks,
+			supportBlock: app.supportBlock,
+			waterSupportEnabled: app.waterSupportEnabled,
+			normalizeExport: app.normalizeExport,
+			selectedBlocks: app.selectedBlocks,
+			mapSizeX: app.mapSizeX,
+			mapSizeZ: app.mapSizeZ,
+			filename: 'mapart',
+			mapdatFilenameUseId: false,
+			mapdatFilenameIdStart: 0,
+		};
+	}
+
+	function resolveColourSetFromBlockName(blockName: string): string | null {
+		const colourEntries = Object.entries(app.coloursJSON as Record<string, any>);
+		for (const [csId, colourSet] of colourEntries) {
+			const selectedBlockId = app.selectedBlocks[csId];
+			const selectedBlock = colourSet?.blocks?.[selectedBlockId];
+			if (selectedBlock?.displayName === blockName) return csId;
+		}
+		return null;
+	}
+
+	$effect(() => {
+		const entries = app.resultPixelEntries;
+		if (!entries || entries.length === 0 || app.modeId !== 0) {
+			realNbtCounts = null;
+			realNbtTotal = null;
+			return;
+		}
+
+		realNbtLoading = true;
+		const runId = `${entries.length}-${app.staircasingId}-${app.whereSupportBlocks}-${app.supportBlock}-${app.waterSupportEnabled}-${app.mapSizeX}-${app.mapSizeZ}`;
+
+		queueMicrotask(() => {
+			try {
+				const counts = computeRealNBTMaterialCounts(entries, buildExportSettings());
+				realNbtCounts = counts;
+				const total = Object.values(counts).reduce((sum, c) => sum + c, 0);
+				// Guard against stale updates if config changed during compute
+				const freshRunId = `${(app.resultPixelEntries?.length ?? 0)}-${app.staircasingId}-${app.whereSupportBlocks}-${app.supportBlock}-${app.waterSupportEnabled}-${app.mapSizeX}-${app.mapSizeZ}`;
+				if (freshRunId === runId) {
+					realNbtCounts = counts;
+					realNbtTotal = total;
+				}
+			} catch {
+				realNbtCounts = null;
+				realNbtTotal = null;
+			} finally {
+				realNbtLoading = false;
+			}
+		});
+	});
 
 	function getBlockIconStyle(colourSetId: string): string {
 		const y = parseInt(colourSetId) * 32;
 		return `background-image: url(${base}/images/textures.png); background-position: 0px -${y}px; background-size: 640px 2080px;`;
 	}
 
-	// Aggregate materials across all map sections
-	let totalMaterials = $derived.by(() => {
+	// Aggregate materials across all map sections (color-based fallback)
+	let colorTotalMaterials = $derived.by(() => {
 		if (!app.resultMaps) return [];
 
 		const totals: Record<string, number> = {};
@@ -49,6 +121,34 @@
 			});
 	});
 
+	// Real NBT material list (from final placed blocks)
+	let realTotalMaterials = $derived.by(() => {
+		if (!realNbtCounts) return [];
+		return Object.entries(realNbtCounts)
+			.filter(([, count]) => count > 0)
+			.sort((a, b) => b[1] - a[1])
+			.map(([blockName, count]) => {
+				const resolvedCsId = resolveColourSetFromBlockName(blockName);
+				const colourSet = resolvedCsId ? (app.coloursJSON as any)[resolvedCsId] : null;
+				const rgb = colourSet?.tonesRGB?.normal ?? [128, 128, 128];
+
+				return {
+					colourSetId: resolvedCsId ?? '__real__',
+					blockName,
+					count,
+					rgb: rgb as [number, number, number],
+					stacks: Math.ceil(count / 64),
+					shulkers: Math.ceil(count / (64 * 27)),
+				};
+			});
+	});
+
+	// Use real NBT materials as standard when available in NBT mode
+	let totalMaterials = $derived.by(() => {
+		if (app.modeId === 0 && realTotalMaterials.length > 0) return realTotalMaterials;
+		return colorTotalMaterials;
+	});
+
 	// Per-map materials for the selected map section
 	let perMapMaterials = $derived.by(() => {
 		if (!app.resultMaps || !perMapMode) return [];
@@ -74,7 +174,7 @@
 			});
 	});
 
-	let activeMaterials = $derived(perMapMode ? perMapMaterials : totalMaterials);
+	let activeMaterials = $derived(perMapMode && !(app.modeId === 0 && realTotalMaterials.length > 0) ? perMapMaterials : totalMaterials);
 	let activeTotal = $derived(activeMaterials.reduce((sum, m) => sum + m.count, 0));
 	let activeStacks = $derived(activeMaterials.reduce((sum, m) => sum + m.stacks, 0));
 	let activeShulkers = $derived(activeMaterials.reduce((sum, m) => sum + m.shulkers, 0));
@@ -82,6 +182,12 @@
 	let grandTotal = $derived(totalMaterials.reduce((sum, m) => sum + m.count, 0));
 
 	let isMultiMap = $derived(app.mapSizeX > 1 || app.mapSizeZ > 1);
+
+	$effect(() => {
+		if (app.modeId === 0 && realTotalMaterials.length > 0 && perMapMode) {
+			perMapMode = false;
+		}
+	});
 
 	let expanded = $state(true);
 </script>
@@ -110,6 +216,11 @@
 			<span>{t('materials.totalBlocks')} {grandTotal.toLocaleString()}</span>
 			<span>{t('materials.colors')} {app.resultUniqueColors}</span>
 		</div>
+		{#if app.modeId === 0 && realNbtLoading}
+			<div class="mb-3 text-[11px] text-[var(--color-muted)]">
+				<span>Calculating real NBT materials…</span>
+			</div>
+		{/if}
 
 		<div class="max-h-[600px] space-y-1 overflow-y-auto">
 			{#each totalMaterials as mat}
@@ -162,7 +273,7 @@
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
-				{#if isMultiMap}
+				{#if isMultiMap && !(app.modeId === 0 && realTotalMaterials.length > 0)}
 					<label class="flex cursor-pointer items-center gap-1.5 text-[10px] text-[var(--color-muted)]">
 						<input
 							type="checkbox"
@@ -185,7 +296,7 @@
 		</div>
 
 		<!-- Per-map selector -->
-		{#if perMapMode && isMultiMap}
+		{#if perMapMode && isMultiMap && !(app.modeId === 0 && realTotalMaterials.length > 0)}
 			<div class="flex items-center gap-2 border-b border-[var(--color-border)] px-5 py-2">
 				<span class="text-[10px] uppercase tracking-wide text-[var(--color-muted)]">{t('materials.map')}</span>
 				<div class="flex flex-wrap gap-1">
@@ -221,10 +332,17 @@
 					{#each activeMaterials as mat}
 						<tr class="border-b border-[var(--color-border)]/30 hover:bg-[var(--color-bg)]">
 							<td class="py-1.5 pr-2">
-								<div
-									class="h-6 w-6 flex-shrink-0 rounded border border-[var(--color-border)]"
-									style="{getBlockIconStyle(mat.colourSetId)} width: 24px; height: 24px; image-rendering: pixelated;"
-								></div>
+								{#if mat.colourSetId === '__real__'}
+									<div
+										class="h-6 w-6 flex-shrink-0 rounded border border-[var(--color-border)]"
+										style="background-color: rgb({mat.rgb[0]}, {mat.rgb[1]}, {mat.rgb[2]});"
+									></div>
+								{:else}
+									<div
+										class="h-6 w-6 flex-shrink-0 rounded border border-[var(--color-border)]"
+										style="{getBlockIconStyle(mat.colourSetId)} width: 24px; height: 24px; image-rendering: pixelated;"
+									></div>
+								{/if}
 							</td>
 							<td class="py-1.5 pr-2 font-medium">{mat.blockName}</td>
 							<td class="py-1.5 pr-2 text-right tabular-nums text-[var(--color-muted)]">{mat.count.toLocaleString()}</td>

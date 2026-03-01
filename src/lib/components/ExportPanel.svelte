@@ -26,6 +26,7 @@
 	let isExporting = $state(false);
 	let mapdatFilenameUseId = $state(false);
 	let mapdatFilenameIdStart = $state(0);
+	let exportError = $state<string | null>(null);
 
 	// Mode check: 0 = NBT (schematic), 1 = map.dat
 	function isNBTMode(): boolean {
@@ -50,6 +51,8 @@
 			staircasingId: app.staircasingId,
 			whereSupportBlocks: app.whereSupportBlocks,
 			supportBlock: app.supportBlock,
+			waterSupportEnabled: app.waterSupportEnabled,
+			normalizeExport: app.normalizeExport,
 			selectedBlocks: app.selectedBlocks,
 			mapSizeX: app.mapSizeX,
 			mapSizeZ: app.mapSizeZ,
@@ -90,7 +93,7 @@
 			});
 		} catch (err) {
 			console.error('Export failed:', err);
-			alert(`${t('export.failed')} ${(err as Error).message}`);
+			exportError = `${t('export.failed')} ${(err as Error).message}`;
 		} finally {
 			isExporting = false;
 			exportProgress = 0;
@@ -155,7 +158,7 @@
 			{#if mapdatFilenameUseId}
 				<div>
 					<label class="mb-1 block text-xs text-[var(--color-muted)]" for="mapdat-id-start">
-						Starting map ID
+						{t('export.startingMapId')}
 					</label>
 					<input
 						id="mapdat-id-start"
@@ -167,6 +170,13 @@
 				</div>
 			{/if}
 		</div>
+	{/if}
+
+	{#if isNBTMode()}
+		<label class="flex items-center gap-2 text-xs">
+			<input type="checkbox" bind:checked={app.normalizeExport} />
+			<span class="text-[var(--color-muted)]">{t('export.normalizeCoords')}</span>
+		</label>
 	{/if}
 
 	<!-- Progress bar -->
@@ -231,3 +241,29 @@
 	</div>
 	{/if}
 </div>
+
+{#if exportError}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+		onclick={() => (exportError = null)}
+		onkeydown={(e) => e.key === 'Escape' && (exportError = null)}
+	>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 shadow-2xl"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h4 class="mb-2 text-sm font-semibold text-[var(--color-text)]">{t('export.errorTitle')}</h4>
+			<p class="mb-4 text-xs text-[var(--color-muted)]">{exportError}</p>
+			<div class="flex justify-end">
+				<button
+					class="rounded bg-[var(--color-primary)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-hover)]"
+					onclick={() => (exportError = null)}
+				>
+					OK
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

@@ -27,6 +27,8 @@ export interface SchematicOptions {
   staircasingId: number;
   whereSupportBlocks: number;
   supportBlock: string;
+  waterSupportEnabled: boolean;
+  normalizeExport: boolean;
   selectedBlocks: Record<string, string>;
 }
 
@@ -45,6 +47,7 @@ const SupportBlockModes = {
   IMPORTANT: 1,
   ALL_OPTIMIZED: 2,
   ALL_DOUBLE_OPTIMIZED: 3,
+  WATER: 4,
 } as const;
 
 // ── Physical block ──
@@ -65,6 +68,7 @@ export class SchematicBuilder {
   private paletteCsId2PaletteId: Record<string, number> = {};
   private palettePaletteId2CsId: string[] = [];
   private columnHeightsCache: number[] = [];
+  private builtMaterialCounts: Record<string, number> = {};
 
   constructor(map: MapData, options: SchematicOptions) {
     this.mapColoursLayout = map.coloursLayout;
@@ -169,8 +173,51 @@ export class SchematicBuilder {
 
   private isSupportBlockMandatory(entry: ColourLayoutEntry): boolean {
     const csId = entry.colourSetId;
+    if (csId === '-1') return false;
     const blockId = this.options.selectedBlocks[csId];
-    return this.options.coloursJSON[csId].blocks[blockId].supportBlockMandatory;
+    const block = this.options.coloursJSON[csId]?.blocks?.[blockId];
+    if (!block) return false;
+
+    if (block.supportBlockMandatory) return true;
+
+    const nbtData = getBlockNBTData(block, this.options.version.MCVersion);
+    const rawName = (nbtData?.NBTName ?? '').toLowerCase();
+    return this.isLikelyFragileBlockName(rawName);
+  }
+
+  private isLikelyFragileBlockName(rawName: string): boolean {
+    if (!rawName) return false;
+
+    return (
+      rawName.endsWith('_carpet') ||
+      rawName.endsWith('_pressure_plate') ||
+      rawName.endsWith('_button') ||
+      rawName.endsWith('_sign') ||
+      rawName.endsWith('_hanging_sign') ||
+      rawName.endsWith('_banner') ||
+      rawName.endsWith('_torch') ||
+      rawName.endsWith('_candle') ||
+      rawName.endsWith('_trapdoor') ||
+      rawName.endsWith('_door') ||
+      rawName === 'carpet' ||
+      rawName === 'lily_pad' ||
+      rawName === 'sea_pickle' ||
+      rawName === 'scaffolding' ||
+      rawName === 'snow' ||
+      rawName === 'lantern'
+    );
+  }
+
+  private isWaterColour(entry: ColourLayoutEntry): boolean {
+    if (entry.colourSetId === '-1') return false;
+    return this.options.coloursJSON[entry.colourSetId]?.mapdatId === 12;
+  }
+
+  private getWaterDepth(tone: ToneKey, x: number, z: number): number {
+    if (tone === 'light') return 1;
+    const even = (x + z) % 2 === 0;
+    if (tone === 'normal') return even ? 5 : 3;
+    return even ? 10 : 7;
   }
 
   // ── Column layout ──
@@ -204,24 +251,62 @@ export class SchematicBuilder {
     // Noobline
     physicalColumn.push(this.returnPhysicalBlock(columnNumber, currentHeight, 0, 'NOOBLINE_SCAFFOLD'));
 
+    let previousWater:
+      | {
+          bottom: number;
+          depth: number;
+          top: number;
+        }
+      | undefined;
+
     for (let row = 0; row < column.length; row++) {
       const block = column[row];
       const previousHeight = currentHeight;
 
-      switch (block.tone) {
-        case 'dark':
-          currentHeight -= 1;
-          break;
-        case 'normal':
-          break;
-        case 'light':
-          currentHeight += 1;
-          break;
-      }
+      if (this.isWaterColour(block)) {
+        const depth = this.getWaterDepth(block.tone, columnNumber, row + 1);
+        const bottom = previousWater ? previousWater.bottom : previousHeight;
+        const top = bottom + depth - 1;
 
-      physicalColumn.push(
-        this.returnPhysicalBlock(columnNumber, currentHeight, row + 1, block.colourSetId),
-      );
+        for (let depthIndex = 0; depthIndex < depth; depthIndex++) {
+          physicalColumn.push(
+            this.returnPhysicalBlock(columnNumber, bottom + depthIndex, row + 1, block.colourSetId),
+          );
+        }
+
+        currentHeight = top;
+        previousWater = { bottom, depth, top };
+      } else {
+        switch (block.tone) {
+          case 'dark': {
+            const isDeepWater = !!previousWater && previousWater.depth > 1;
+            if (isDeepWater) {
+              currentHeight = previousWater!.bottom;
+            } else {
+              const darkReference = previousWater ? previousWater.bottom : previousHeight;
+              currentHeight = darkReference - 1;
+            }
+            break;
+          }
+          case 'normal':
+            currentHeight = previousHeight;
+            break;
+          case 'light':
+            currentHeight = previousHeight + 1;
+            break;
+          case 'unobtainable': {
+            const darkReference = previousWater ? previousWater.bottom : previousHeight;
+            currentHeight = darkReference - 1;
+            break;
+          }
+        }
+
+        previousWater = undefined;
+
+        physicalColumn.push(
+          this.returnPhysicalBlock(columnNumber, currentHeight, row + 1, block.colourSetId),
+        );
+      }
 
       // Support blocks
       this.addSupportBlocks(physicalColumn, column, columnNumber, row, currentHeight, previousHeight, block);
@@ -276,8 +361,52 @@ export class SchematicBuilder {
         this.addAllDoubleOptimizedSupport(physicalColumn, column, columnNumber, row, currentHeight, previousHeight, block);
         break;
 
+      case SupportBlockModes.WATER:
+        break;
+
       default:
         throw new Error('Unknown support-blocks option');
+    }
+  }
+
+  private addWaterSupportBlocks(): void {
+    const blocksArray = (this.nbtJson.value.blocks as any).value.value as PhysicalBlock[];
+    if (blocksArray.length === 0) return;
+
+    const occupied = new Set<string>();
+    const waterPositions: Array<{ x: number; y: number; z: number }> = [];
+
+    for (const block of blocksArray) {
+      const [x, y, z] = block.pos.value.value;
+      occupied.add(`${x},${y},${z}`);
+
+      const csId = this.palettePaletteId2CsId[block.state.value];
+      if (csId !== 'NOOBLINE_SCAFFOLD' && this.options.coloursJSON[csId]?.mapdatId === 12) {
+        waterPositions.push({ x, y, z });
+      }
+    }
+
+    const additions: PhysicalBlock[] = [];
+    for (const water of waterPositions) {
+      const neighbors = [
+        { x: water.x, y: water.y, z: water.z - 1 },
+        { x: water.x, y: water.y, z: water.z + 1 },
+        { x: water.x - 1, y: water.y, z: water.z },
+        { x: water.x + 1, y: water.y, z: water.z },
+        { x: water.x, y: water.y - 1, z: water.z },
+      ];
+
+      for (const neighbor of neighbors) {
+        if (neighbor.y < 0) continue;
+        const key = `${neighbor.x},${neighbor.y},${neighbor.z}`;
+        if (occupied.has(key)) continue;
+        occupied.add(key);
+        additions.push(this.returnPhysicalBlock(neighbor.x, neighbor.y, neighbor.z, 'NOOBLINE_SCAFFOLD'));
+      }
+    }
+
+    for (const addition of additions) {
+      blocksArray.push(addition);
     }
   }
 
@@ -471,13 +600,98 @@ export class SchematicBuilder {
 
   // ── Size ──
 
+  private normalizeBlocksToOrigin(): void {
+    const blocksArray = (this.nbtJson.value.blocks as any).value.value as PhysicalBlock[];
+    if (blocksArray.length === 0) return;
+
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let minZ = Number.POSITIVE_INFINITY;
+
+    for (const block of blocksArray) {
+      const [x, y, z] = block.pos.value.value;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (z < minZ) minZ = z;
+    }
+
+    if (minX === 0 && minY === 0 && minZ === 0) return;
+
+    for (const block of blocksArray) {
+      block.pos.value.value[0] -= minX;
+      block.pos.value.value[1] -= minY;
+      block.pos.value.value[2] -= minZ;
+    }
+  }
+
+  private ensureNoNegativeCoordinates(): void {
+    const blocksArray = (this.nbtJson.value.blocks as any).value.value as PhysicalBlock[];
+    for (const block of blocksArray) {
+      const [x, y, z] = block.pos.value.value;
+      if (x < 0 || y < 0 || z < 0) {
+        throw new Error(
+          'Export contains negative coordinates. Enable "Normalize export" or adjust settings.',
+        );
+      }
+    }
+  }
+
   private setNbtJsonSize(): void {
     const sizeArray = (this.nbtJson.value.size as any).value.value as number[];
-    sizeArray.push(
-      this.mapColoursLayout.length,
-      Math.max(...this.columnHeightsCache) + 1,
-      this.mapColoursLayout[0].length + 1,
-    );
+
+    const blocksArray = (this.nbtJson.value.blocks as any).value.value as PhysicalBlock[];
+    if (blocksArray.length === 0) {
+      sizeArray.push(this.mapColoursLayout.length, 1, this.mapColoursLayout[0].length + 1);
+      return;
+    }
+
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let minZ = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    let maxZ = Number.NEGATIVE_INFINITY;
+
+    for (const block of blocksArray) {
+      const [x, y, z] = block.pos.value.value;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (z < minZ) minZ = z;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+      if (z > maxZ) maxZ = z;
+    }
+
+    sizeArray.push(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1);
+  }
+
+  private buildRealMaterialCountsFromPlacedBlocks(): void {
+    const counts: Record<string, number> = {};
+    const blocksArray = (this.nbtJson.value.blocks as any).value.value as PhysicalBlock[];
+
+    for (const block of blocksArray) {
+      const paletteId = block.state.value;
+      const csId = this.palettePaletteId2CsId[paletteId];
+      if (!csId) continue;
+
+      if (csId === 'NOOBLINE_SCAFFOLD') {
+        const key = this.options.supportBlock;
+        counts[key] = (counts[key] || 0) + 1;
+        continue;
+      }
+
+      const selectedBlockId = this.options.selectedBlocks[csId];
+      const selectedBlock = this.options.coloursJSON[csId]?.blocks?.[selectedBlockId];
+      const key = selectedBlock?.displayName ?? `ColourSet ${csId}`;
+      counts[key] = (counts[key] || 0) + 1;
+    }
+
+    this.builtMaterialCounts = counts;
+  }
+
+  /** Returns material counts from actual placed schematic blocks after build(). */
+  getBuiltMaterialCounts(): Record<string, number> {
+    return { ...this.builtMaterialCounts };
   }
 
   // ── Public API ──
@@ -496,6 +710,18 @@ export class SchematicBuilder {
       this.getPhysicalLayoutColumn(col);
       onProgress?.((col + 1) / this.mapColoursLayout.length);
     }
+
+    if (this.options.whereSupportBlocks === SupportBlockModes.WATER || this.options.waterSupportEnabled) {
+      this.addWaterSupportBlocks();
+    }
+
+    if (this.options.normalizeExport) {
+      this.normalizeBlocksToOrigin();
+    } else {
+      this.ensureNoNegativeCoordinates();
+    }
+
+    this.buildRealMaterialCountsFromPlacedBlocks();
 
     this.setNbtJsonSize();
 
