@@ -93,6 +93,20 @@ export interface ProcessorSettings {
   backgroundColourMode: number;
   backgroundColour: string;
 
+  // Mapmaker memo dithering
+  memoMaxHeight: number;
+  memoMaxDepth: number;
+  memoMaxCache: number;
+  memoQuantize: number;
+  memoUseLab: boolean;
+  memoClampToPalette: boolean;
+  memoUseReference: boolean;
+  memoUseSeed: boolean;
+  memoDiffusionFactor: number;
+  memoChooser: number;
+  memoDiscriminator: number;
+  memoPatternId: string;
+
   // Grid
   showGridOverlay: boolean;
 

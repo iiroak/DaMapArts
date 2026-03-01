@@ -16,6 +16,9 @@
 	let canvas = $state<HTMLCanvasElement>(undefined!);
 	let gridCanvas = $state<HTMLCanvasElement>(undefined!);
 	let containerRef = $state<HTMLDivElement>(undefined!);
+	let processAbortController: AbortController | null = null;
+	let processingTimer: ReturnType<typeof setTimeout> | null = null;
+	let processingRunId = 0;
 
 	// Toggle between original / pre-processed / map art
 	type ViewMode = 'mapart' | 'preprocess' | 'original';
@@ -109,9 +112,32 @@
 		void app.edgeMaskEnabled;
 		void app.edgeMaskThreshold;
 		void app.luminanceWeight;
+		void app.memoMaxHeight;
+		void app.memoMaxDepth;
+		void app.memoMaxCache;
+		void app.memoQuantize;
+		void app.memoUseLab;
+		void app.memoClampToPalette;
+		void app.memoUseReference;
+		void app.memoUseSeed;
+		void app.memoDiffusionFactor;
+		void app.memoChooser;
+		void app.memoDiscriminator;
+		void app.memoPatternId;
 
-		// Run processing outside tracking context to avoid circular deps
-		untrack(() => runProcessing());
+		// Run processing outside tracking context to avoid circular deps.
+		// Debounced to avoid starting multiple expensive renders while user is still tweaking controls.
+		if (processingTimer) clearTimeout(processingTimer);
+		processingTimer = setTimeout(() => {
+			untrack(() => runProcessing());
+		}, 120);
+
+		return () => {
+			if (processingTimer) {
+				clearTimeout(processingTimer);
+				processingTimer = null;
+			}
+		};
 	});
 
 	// Draw canvas based on view mode
@@ -213,6 +239,11 @@
 	function runProcessing() {
 		if (!app.sourceImage) return;
 
+		processingRunId += 1;
+		const myRunId = processingRunId;
+		processAbortController?.abort();
+		processAbortController = new AbortController();
+
 		app.isProcessing = true;
 		app.processingProgress = 0;
 
@@ -256,6 +287,18 @@
 			edgeMaskEnabled: app.edgeMaskEnabled,
 			edgeMaskThreshold: app.edgeMaskThreshold,
 			luminanceWeight: app.luminanceWeight,
+			memoMaxHeight: app.memoMaxHeight,
+			memoMaxDepth: app.memoMaxDepth,
+			memoMaxCache: app.memoMaxCache,
+			memoQuantize: app.memoQuantize,
+			memoUseLab: app.memoUseLab,
+			memoClampToPalette: app.memoClampToPalette,
+			memoUseReference: app.memoUseReference,
+			memoUseSeed: app.memoUseSeed,
+			memoDiffusionFactor: app.memoDiffusionFactor,
+			memoChooser: app.memoChooser,
+			memoDiscriminator: app.memoDiscriminator,
+			memoPatternId: app.memoPatternId,
 		};
 
 		// Get source pixels (runs on main thread — uses canvas for resize)
@@ -303,22 +346,31 @@
 			},
 			{
 				mode: app.processingMode,
+				signal: processAbortController.signal,
 				onProgress: (p) => {
-					app.processingProgress = p;
+					if (myRunId === processingRunId) app.processingProgress = p;
 				},
 			},
-		).then((result) => {
-			if (!result) return; // Superseded by newer request
+		)
+			.then((result) => {
+				if (myRunId !== processingRunId) return;
+				if (!result) return;
 
-			const pixelData = new Uint8ClampedArray(result.rgbaData);
-			app.resultImageData = new ImageData(pixelData, width, height);
-			app.resultPixelEntries = result.pixelEntries;
-			app.resultMaps = result.maps;
-			app.resultTotalPixels = result.totalPixels;
-			app.resultUniqueColors = result.uniqueColors;
-			app.isProcessing = false;
-			app.processingProgress = 1;
-		});
+				const pixelData = new Uint8ClampedArray(result.rgbaData);
+				app.resultImageData = new ImageData(pixelData, width, height);
+				app.resultPixelEntries = result.pixelEntries;
+				app.resultMaps = result.maps;
+				app.resultTotalPixels = result.totalPixels;
+				app.resultUniqueColors = result.uniqueColors;
+				app.isProcessing = false;
+				app.processingProgress = 1;
+			})
+			.catch((err) => {
+				if (myRunId !== processingRunId) return;
+				if (err instanceof DOMException && err.name === 'AbortError') return;
+				console.error('Processing failed:', err);
+				app.isProcessing = false;
+			});
 	}
 
 	// Reset pan and auto-fit zoom when result changes

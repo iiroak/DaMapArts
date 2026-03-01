@@ -36,6 +36,7 @@ import { distributeErrorOstromoukhov } from '$lib/dither/ostromoukhov.js';
 import { generateHilbertPath, createRiemersmaWeights } from '$lib/dither/riemersma.js';
 import { applyBilateralFilter } from './bilateralFilter.js';
 import { computeEdgeMask } from './edgeMask.js';
+import { processMemoMapmaker } from './memoMapmaker.js';
 
 function clamp(v: number): number {
   return v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
@@ -299,6 +300,18 @@ export function processPixels(input: EngineInput): EngineOutput {
       settings.bilateralSigmaColor,
       settings.bilateralRadius,
     );
+  }
+
+  if (settings.ditherMethod.startsWith('memo-')) {
+    return processMemoMapmaker({
+      rgbaData,
+      rgbFloat,
+      width,
+      height,
+      palette,
+      settings,
+      onProgress,
+    });
   }
 
   // ── Pre-processing: Edge Mask ──

@@ -118,6 +118,20 @@ export interface AppState {
   edgeMaskThreshold: number;
   /** Weight multiplier for luminance in color distance (1.0 = neutral, 1.5-2.0 = prioritize brightness) */
   luminanceWeight: number;
+
+  // Mapmaker memo dithering
+  memoMaxHeight: number;
+  memoMaxDepth: number;
+  memoMaxCache: number;
+  memoQuantize: number;
+  memoUseLab: boolean;
+  memoClampToPalette: boolean;
+  memoUseReference: boolean;
+  memoUseSeed: boolean;
+  memoDiffusionFactor: number;
+  memoChooser: number;
+  memoDiscriminator: number;
+  memoPatternId: string;
 }
 
 // Find default version (latest)
@@ -220,6 +234,19 @@ export function createAppState(): AppState {
     edgeMaskEnabled: false,
     edgeMaskThreshold: 40,
     luminanceWeight: 1.0,
+
+    memoMaxHeight: 4,
+    memoMaxDepth: 950,
+    memoMaxCache: 200000,
+    memoQuantize: 8,
+    memoUseLab: false,
+    memoClampToPalette: false,
+    memoUseReference: true,
+    memoUseSeed: false,
+    memoDiffusionFactor: 1,
+    memoChooser: 2,
+    memoDiscriminator: 1,
+    memoPatternId: 'bayer-4x4',
   });
 
   return appState;

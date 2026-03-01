@@ -527,6 +527,18 @@
 			edgeMaskEnabled: app.edgeMaskEnabled,
 			edgeMaskThreshold: app.edgeMaskThreshold,
 			luminanceWeight: app.luminanceWeight,
+			memoMaxHeight: app.memoMaxHeight,
+			memoMaxDepth: app.memoMaxDepth,
+			memoMaxCache: app.memoMaxCache,
+			memoQuantize: app.memoQuantize,
+			memoUseLab: app.memoUseLab,
+			memoClampToPalette: app.memoClampToPalette,
+			memoUseReference: app.memoUseReference,
+			memoUseSeed: app.memoUseSeed,
+			memoDiffusionFactor: app.memoDiffusionFactor,
+			memoChooser: app.memoChooser,
+			memoDiscriminator: app.memoDiscriminator,
+			memoPatternId: app.memoPatternId,
 		};
 
 		// Source reference for fidelity comparison:
@@ -693,9 +705,12 @@
 	);
 
 	let maxThumbSize = $derived(
-		renderMode === 'full'
-			? Math.max(app.mapSizeX, app.mapSizeZ) * 128
-			: previewSize * 128,
+		Math.max(
+			360,
+			renderMode === 'full'
+				? Math.max(app.mapSizeX, app.mapSizeZ) * 128
+				: previewSize * 128,
+		),
 	);
 
 	let sortedResults = $derived.by(() => {

@@ -47,7 +47,7 @@
 	}
 
 	function showsPropagationControls(methodId: string): boolean {
-		return methodId === 'ostromoukhov' || [
+		return methodId === 'ostromoukhov' || methodId === 'memo-diffuse-fs' || [
 			'floyd-steinberg',
 			'floyd-steinberg-20',
 			'floyd-steinberg-24',
@@ -66,6 +66,14 @@
 			'shiau-fan',
 			'shiau-fan-2',
 		].includes(methodId);
+	}
+
+	function isMemoMethod(methodId: string): boolean {
+		return methodId.startsWith('memo-');
+	}
+
+	function isMemoPattern(methodId: string): boolean {
+		return methodId.startsWith('memo-pattern');
 	}
 </script>
 
@@ -97,6 +105,11 @@
 				bind:value={app.ditherMethodId}
 			>
 				<option value="none">{t('processing.none')}</option>
+				<optgroup label="Mapmaker Memo">
+					<option value="memo-none">Memo: Limited Staircase (No Dither)</option>
+					<option value="memo-pattern-bayer4">Memo: Pattern (Bayer 4×4)</option>
+					<option value="memo-diffuse-fs">Memo: Diffusion (Floyd-Steinberg)</option>
+				</optgroup>
 				<optgroup label={t('processing.errorDiffusion')}>
 					<option value="floyd-steinberg">Floyd-Steinberg</option>
 					<option value="floyd-steinberg-20">Floyd-Steinberg (/20)</option>
@@ -134,6 +147,90 @@
 				</optgroup>
 			</select>
 		</label>
+
+		{#if isMemoMethod(app.ditherMethodId)}
+			<div class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 space-y-2">
+				<div class="text-xs text-[var(--color-muted)]">Mapmaker Memo</div>
+				<div class="grid grid-cols-2 gap-2">
+					<label class="block">
+						<div class="mb-1 text-xs text-[var(--color-muted)]">Max Height</div>
+						<input type="number" min="1" max="32" bind:value={app.memoMaxHeight} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
+					</label>
+					<label class="block">
+						<div class="mb-1 text-xs text-[var(--color-muted)]">Max Depth</div>
+						<input type="number" min="8" max="3000" step="1" bind:value={app.memoMaxDepth} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
+					</label>
+					<label class="block">
+						<div class="mb-1 text-xs text-[var(--color-muted)]">Max Cache</div>
+						<input type="number" min="1000" max="1000000" step="1000" bind:value={app.memoMaxCache} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
+					</label>
+					<label class="block">
+						<div class="mb-1 text-xs text-[var(--color-muted)]">State Bits</div>
+						<input type="number" min="0" max="8" bind:value={app.memoQuantize} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
+					</label>
+				</div>
+				<label class="flex items-center gap-2 text-xs">
+					<input type="checkbox" bind:checked={app.memoUseLab} />
+					<span class="text-[var(--color-muted)]">LAB distance</span>
+				</label>
+				<label class="flex items-center gap-2 text-xs">
+					<input type="checkbox" bind:checked={app.memoClampToPalette} />
+					<span class="text-[var(--color-muted)]">Clamp to palette gamut</span>
+				</label>
+				<label class="flex items-center gap-2 text-xs">
+					<input type="checkbox" bind:checked={app.memoUseReference} />
+					<span class="text-[var(--color-muted)]">Reference staircase</span>
+				</label>
+				<label class="flex items-center gap-2 text-xs">
+					<input type="checkbox" bind:checked={app.memoUseSeed} />
+					<span class="text-[var(--color-muted)]">Deterministic splits</span>
+				</label>
+
+				{#if app.ditherMethodId === 'memo-diffuse-fs'}
+					<label class="block">
+						<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+							<span>Diffusion factor</span>
+							<span>{app.memoDiffusionFactor.toFixed(2)}</span>
+						</div>
+						<input type="range" min="0.5" max="1.5" step="0.05" bind:value={app.memoDiffusionFactor} class="w-full" />
+					</label>
+				{/if}
+
+				{#if isMemoPattern(app.ditherMethodId)}
+					<div class="grid grid-cols-2 gap-2">
+						<label class="block">
+							<div class="mb-1 text-xs text-[var(--color-muted)]">Pattern</div>
+							<select bind:value={app.memoPatternId} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm">
+								<option value="bayer-2x2">Bayer 2×2</option>
+								<option value="bayer-3x3">Bayer 3×3</option>
+								<option value="bayer-4x4">Bayer 4×4</option>
+								<option value="bayer-8x8">Bayer 8×8</option>
+								<option value="ordered-3x3">Ordered 3×3</option>
+								<option value="cluster-dot">Cluster Dot</option>
+								<option value="halftone-8x8">Halftone 8×8</option>
+								<option value="void-cluster-14x14">Void Cluster 14×14</option>
+								<option value="knoll">Knoll</option>
+							</select>
+						</label>
+						<label class="block">
+							<div class="mb-1 text-xs text-[var(--color-muted)]">Chooser</div>
+							<select bind:value={app.memoChooser} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm">
+								<option value={0}>Closest</option>
+								<option value={1}>Old</option>
+								<option value={2}>Reflect</option>
+							</select>
+						</label>
+						<label class="block col-span-2">
+							<div class="mb-1 text-xs text-[var(--color-muted)]">Discriminator</div>
+							<select bind:value={app.memoDiscriminator} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm">
+								<option value={0}>Old</option>
+								<option value={1}>New</option>
+							</select>
+						</label>
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		{#if showsPropagationControls(app.ditherMethodId)}
 			<div class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 space-y-2">

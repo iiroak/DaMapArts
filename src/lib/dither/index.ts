@@ -32,6 +32,9 @@ import type { DitherMethod } from './types.js';
 /** Registry of all available dither methods */
 export const DITHER_METHODS: DitherMethod[] = [
   { id: 'none', uniqueId: 0, name: 'None', type: 'none' },
+  { id: 'memo-none', uniqueId: 30, name: 'Memo: Limited Staircase (No Dither)', type: 'none' },
+  { id: 'memo-pattern-bayer4', uniqueId: 31, name: 'Memo: Pattern (Bayer 4×4)', type: 'ordered' },
+  { id: 'memo-diffuse-fs', uniqueId: 32, name: 'Memo: Diffusion (Floyd-Steinberg)', type: 'error-diffusion' },
   // Error diffusion
   { id: 'floyd-steinberg', uniqueId: 1, name: 'Floyd-Steinberg', type: 'error-diffusion' },
   { id: 'floyd-steinberg-20', uniqueId: 19, name: 'Floyd-Steinberg (/20)', type: 'error-diffusion' },

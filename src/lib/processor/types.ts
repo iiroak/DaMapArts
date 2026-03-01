@@ -39,6 +39,30 @@ export interface ProcessorSettings {
   edgeMaskThreshold: number;
   /** Weight multiplier for luminance channel in Lab/Oklab/Oklch/YCbCr distance (1.0 = neutral) */
   luminanceWeight: number;
+  /** Mapmaker-style memo dithering: max staircase height states */
+  memoMaxHeight: number;
+  /** Max recursive depth before subdivision */
+  memoMaxDepth: number;
+  /** Max memo cache entries before subdivision */
+  memoMaxCache: number;
+  /** Quantize bits for diffusion memo state (8 disables quantized color key) */
+  memoQuantize: number;
+  /** Compare colors in LAB instead of RGB */
+  memoUseLab: boolean;
+  /** Clamp candidate colors to palette gamut instead of full RGB */
+  memoClampToPalette: boolean;
+  /** Reference staircase mode (zero error for unrestricted pick) */
+  memoUseReference: boolean;
+  /** Deterministic split seed */
+  memoUseSeed: boolean;
+  /** Diffusion factor multiplier */
+  memoDiffusionFactor: number;
+  /** Pattern chooser strategy: 0 closest-two, 1 old, 2 reflect */
+  memoChooser: number;
+  /** Pattern discriminator strategy: 0 old, 1 vector */
+  memoDiscriminator: number;
+  /** Ordered matrix id for memo pattern mode */
+  memoPatternId: string;
 }
 
 /** Per-pixel quantization result */
