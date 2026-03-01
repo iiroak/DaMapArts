@@ -123,6 +123,14 @@ for memo-technique lineage and related mapart workflow contributions.
 
 Thanks to the original authors and contributors, especially **Mike (mike2b2t/mapartcraft)**, for **foundational ideas**, **data formats**, **tooling**, and **the latest technique updates and improvements** adopted in this project.
 
+Additional acknowledgement for advanced NBT/water workflow discussion and reference context:
+
+- [EvModder/PNG-to-NBT](https://github.com/EvModder/PNG-to-NBT) by **Év / Fletch**
+- Credits explicitly noted in that context: **Év / Fletch**, **mike**, **Gu2tv4**
+- Reference license for that project/context: **CC BY-NC-SA 4.0**
+
+Note: DaMapArts keeps its own project license below. Any direct reuse of third-party code/content should follow the original attribution and license terms of that source.
+
 ## License
 
 This project uses the same license as the referenced previous project: **GNU General Public License v3.0 (GPL-3.0)**.
