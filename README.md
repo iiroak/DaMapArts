@@ -113,6 +113,14 @@ This project is based on prior work from the MapartCraft ecosystem, especially:
 - [rebane2001/mapartcraft](https://github.com/rebane2001/mapartcraft)
 - [mike2b2t/mapartcraft](https://github.com/mike2b2t/mapartcraft)
 
+Additional community credits (Map Artist of 2b2t):
+
+- **jkascpkmc**
+- **WASM**
+- **THCFree**
+
+for memo-technique lineage and related mapart workflow contributions.
+
 Thanks to the original authors and contributors, especially **Mike (mike2b2t/mapartcraft)**, for **foundational ideas**, **data formats**, **tooling**, and **the latest technique updates and improvements** adopted in this project.
 
 ## License
