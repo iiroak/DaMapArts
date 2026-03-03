@@ -8,6 +8,7 @@
 	import { installMemDiag, registerSource, estimateObjectSize, formatBytes } from '$lib/utils/memDiag.js';
 	import Modal from '$lib/components/Modal.svelte';
 	import BetaNotice from '$lib/components/BetaNotice.svelte';
+	import UpdateNotice from '$lib/components/UpdateNotice.svelte';
 	import { clearCompareCache } from '$lib/components/CompareModal.svelte';
 
 	let { children } = $props();
@@ -116,3 +117,4 @@
 
 <Modal />
 <BetaNotice />
+<UpdateNotice />

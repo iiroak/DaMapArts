@@ -10,7 +10,7 @@
 	const t = locale.t;
 
 	let showCompare = $state(false);
-	let expanded = $state(true);
+	let expanded = $state(false);
 
 	function handleCompareSelect(
 		ditherMethod: string,
@@ -92,6 +92,7 @@
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
 	<div class="flex w-full items-center gap-2">
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
+			<span class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold leading-none text-white">5</span>
 			{t('processing.title')}
 		</h3>
 		<button
@@ -119,7 +120,7 @@
 				<option value="none">{t('processing.none')}</option>
 				<optgroup label="Mapmaker Memo">
 					<option value="memo-none">Memo: Limited Staircase (No Dither)</option>
-					<option value="memo-pattern-bayer4">Memo: Pattern (Bayer 4×4)</option>
+					<option value="memo-pattern-bayer4">Memo: Pattern (Bayer 4Ã—4)</option>
 					<option value="memo-diffuse-fs">Memo: Diffusion (Floyd-Steinberg)</option>
 				</optgroup>
 				<optgroup label={t('processing.errorDiffusion')}>
@@ -143,14 +144,14 @@
 					<option value="ostromoukhov">Ostromoukhov</option>
 				</optgroup>
 				<optgroup label={t('processing.ordered')}>
-					<option value="bayer-2x2">Bayer (2×2)</option>
-					<option value="bayer-3x3">Bayer (3×3)</option>
-					<option value="bayer-4x4">Bayer (4×4)</option>
-					<option value="bayer-8x8">Bayer (8×8)</option>
-					<option value="ordered-3x3">Ordered (3×3)</option>
+					<option value="bayer-2x2">Bayer (2Ã—2)</option>
+					<option value="bayer-3x3">Bayer (3Ã—3)</option>
+					<option value="bayer-4x4">Bayer (4Ã—4)</option>
+					<option value="bayer-8x8">Bayer (8Ã—8)</option>
+					<option value="ordered-3x3">Ordered (3Ã—3)</option>
 					<option value="cluster-dot">Cluster Dot (Halftone)</option>
-					<option value="halftone-8x8">Halftone (8×8)</option>
-					<option value="void-cluster-14x14">Void-and-cluster (14×14)</option>
+					<option value="halftone-8x8">Halftone (8Ã—8)</option>
+					<option value="void-cluster-14x14">Void-and-cluster (14Ã—14)</option>
 					<option value="knoll">Knoll</option>
 					<option value="blue-noise">Blue Noise</option>
 				</optgroup>
@@ -162,37 +163,62 @@
 
 		{#if isMemoMethod(app.ditherMethodId)}
 			<div class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 space-y-2">
-				<div class="text-xs text-[var(--color-muted)]">Mapmaker Memo</div>
-				<div class="grid grid-cols-2 gap-2">
-					<label class="block">
-						<div class="mb-1 text-xs text-[var(--color-muted)]">Max Height</div>
-						<input type="number" min="1" max="32" bind:value={app.memoMaxHeight} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
-					</label>
-					<label class="block">
-						<div class="mb-1 text-xs text-[var(--color-muted)]">Max Depth</div>
-						<input type="number" min="8" max="3000" step="1" bind:value={app.memoMaxDepth} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
-					</label>
-					<label class="block">
-						<div class="mb-1 text-xs text-[var(--color-muted)]">Max Cache</div>
-						<input type="number" min="1000" max="1000000" step="1000" bind:value={app.memoMaxCache} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
-					</label>
-					<label class="block">
-						<div class="mb-1 text-xs text-[var(--color-muted)]">State Bits</div>
-						<input
-							type="number"
-							min="0"
-							max="8"
-							value={getMemoStateBitsDisplayValue()}
-							oninput={handleMemoStateBitsInput}
-							class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm"
-						/>
-						<div class="mt-1 text-[10px] text-[var(--color-muted)]">0 = no state key (faster), 8 = full state key (slowest)</div>
-					</label>
+				<div class="flex items-center justify-between">
+					<div class="text-xs text-[var(--color-muted)]">Mapmaker Memo</div>
+					<button
+						class="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-[var(--color-muted)] opacity-50 transition-all hover:opacity-100 hover:text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
+						onclick={(e) => { e.stopPropagation(); infoModal.openTab('processing', 'memo'); }}
+						title="Memo info"
+					>?</button>
 				</div>
+				<p class="text-[10px] italic text-[var(--color-muted)] opacity-70">{t('processing.memoStaircaseHint')}</p>
+				<label class="block">
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>Max Height</span>
+						<span>{app.memoMaxHeight}</span>
+					</div>
+					<input type="range" min="1" max="32" step="1" bind:value={app.memoMaxHeight} class="w-full" />
+				</label>
+				<label class="block">
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>Max Depth</span>
+						<span>{app.memoMaxDepth}</span>
+					</div>
+					<input type="range" min="8" max="3000" step="1" bind:value={app.memoMaxDepth} class="w-full" />
+				</label>
+				<label class="block">
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>Max Cache</span>
+						<span>{app.memoMaxCache.toLocaleString()}</span>
+					</div>
+					<input type="range" min="1000" max="1000000" step="1000" bind:value={app.memoMaxCache} class="w-full" />
+				</label>
+				<label class="block">
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>State Bits</span>
+						<span>{getMemoStateBitsDisplayValue()}</span>
+					</div>
+					<input
+						type="range"
+						min="0"
+						max="8"
+						step="1"
+						value={getMemoStateBitsDisplayValue()}
+						oninput={handleMemoStateBitsInput}
+						class="w-full"
+					/>
+					<div class="mt-1 flex items-center justify-between text-[10px] text-[var(--color-muted)]">
+						<span>Fast</span>
+						<span>Slow</span>
+					</div>
+				</label>
 				<label class="flex items-center gap-2 text-xs">
 					<input type="checkbox" bind:checked={app.memoUseLab} />
 					<span class="text-[var(--color-muted)]">LAB distance (MapartCraft LAB, not strict CIELAB)</span>
 				</label>
+				{#if app.memoUseLab}
+					<p class="text-[10px] italic text-amber-500/80">{t('processing.memoLabOverride')}</p>
+				{/if}
 				<label class="flex items-center gap-2 text-xs">
 					<input type="checkbox" bind:checked={app.memoClampToPalette} />
 					<span class="text-[var(--color-muted)]">Clamp to palette gamut</span>
@@ -221,14 +247,14 @@
 						<label class="block">
 							<div class="mb-1 text-xs text-[var(--color-muted)]">Pattern</div>
 							<select bind:value={app.memoPatternId} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm">
-								<option value="bayer-2x2">Bayer 2×2</option>
-								<option value="bayer-3x3">Bayer 3×3</option>
-								<option value="bayer-4x4">Bayer 4×4</option>
-								<option value="bayer-8x8">Bayer 8×8</option>
-								<option value="ordered-3x3">Ordered 3×3</option>
+								<option value="bayer-2x2">Bayer 2Ã—2</option>
+								<option value="bayer-3x3">Bayer 3Ã—3</option>
+								<option value="bayer-4x4">Bayer 4Ã—4</option>
+								<option value="bayer-8x8">Bayer 8Ã—8</option>
+								<option value="ordered-3x3">Ordered 3Ã—3</option>
 								<option value="cluster-dot">Cluster Dot</option>
-								<option value="halftone-8x8">Halftone 8×8</option>
-								<option value="void-cluster-14x14">Void Cluster 14×14</option>
+								<option value="halftone-8x8">Halftone 8Ã—8</option>
+								<option value="void-cluster-14x14">Void Cluster 14Ã—14</option>
 								<option value="knoll">Knoll</option>
 							</select>
 						</label>
@@ -252,63 +278,71 @@
 			</div>
 		{/if}
 
-		{#if showsPropagationControls(app.ditherMethodId)}
-			<div class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 space-y-2">
-				<div class="text-xs text-[var(--color-muted)]">{t('processing.channelPropagation')}</div>
-				<label class="block">
-					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
-						<span>{t('processing.redPropagation')}</span>
-						<span>{app.ditherPropagationRed}%</span>
-					</div>
-					<input type="range" min="0" max="200" step="1" bind:value={app.ditherPropagationRed} class="w-full" />
-				</label>
-				<label class="block">
-					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
-						<span>{t('processing.greenPropagation')}</span>
-						<span>{app.ditherPropagationGreen}%</span>
-					</div>
-					<input type="range" min="0" max="200" step="1" bind:value={app.ditherPropagationGreen} class="w-full" />
-				</label>
-				<label class="block">
-					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
-						<span>{t('processing.bluePropagation')}</span>
-						<span>{app.ditherPropagationBlue}%</span>
-					</div>
-					<input type="range" min="0" max="200" step="1" bind:value={app.ditherPropagationBlue} class="w-full" />
-				</label>
-			</div>
-		{/if}
+		<!-- ── Color Matching ── -->
+		<div class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-2.5 space-y-2">
+			<div class="text-xs font-medium text-[var(--color-muted)]">{t('processing.colorMatching')}</div>
 
-		<!-- Color Space -->
-		<label class="block">
-			<span class="mb-1 block text-xs text-[var(--color-muted)]">{t('processing.colorSpace')}</span>
-			<select
-				class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-sm"
-				bind:value={app.colorSpace}
-			>
-				<optgroup label="MapartCraft">
-					<option value="mapartcraft-default">MapartCraft Default</option>
-					<option value="euclidian">Euclidian</option>
-					<option value="cie76-lab65">CIE76 D65 (L*a*b*)</option>
-					<option value="cie76-lab50">CIE76 D50 (L*a*b*)</option>
-					<option value="ciede2000-lab65">CIEDE2000 D65 (L*a*b*)</option>
-					<option value="ciede2000-lab50">CIEDE2000 D50 (L*a*b*)</option>
-					<option value="hct">HCT (Hue, Chroma, Tone)</option>
-				</optgroup>
-				<optgroup label={t('processing.perceptual')}>
-					<option value="oklab">Oklab</option>
-					<option value="oklch">Oklch</option>
-					<option value="lab">CIE L*a*b*</option>
-				</optgroup>
-				<optgroup label={t('processing.lumaChroma')}>
-					<option value="ycbcr">YCbCr (BT.601)</option>
-				</optgroup>
-				<optgroup label={t('processing.basic')}>
-					<option value="rgb">RGB</option>
-					<option value="hsl">HSL</option>
-				</optgroup>
-			</select>
-		</label>
+			{#if isMemoMethod(app.ditherMethodId) && app.memoUseLab}
+				<p class="text-[10px] italic text-amber-500/80">{t('processing.colorSpaceOverridden')}</p>
+			{/if}
+
+			<!-- Color Space -->
+			<label class="block" class:opacity-40={isMemoMethod(app.ditherMethodId) && app.memoUseLab}>
+				<span class="mb-1 block text-xs text-[var(--color-muted)]">{t('processing.colorSpace')}</span>
+				<select
+					class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm"
+					bind:value={app.colorSpace}
+				>
+					<optgroup label="MapartCraft">
+						<option value="mapartcraft-default">MapartCraft Default</option>
+						<option value="cie76-lab65">CIE76 D65 (L*a*b*)</option>
+						<option value="cie76-lab50">CIE76 D50 (L*a*b*)</option>
+						<option value="ciede2000-lab65">CIEDE2000 D65 (L*a*b*)</option>
+						<option value="ciede2000-lab50">CIEDE2000 D50 (L*a*b*)</option>
+						<option value="hct">HCT (Hue, Chroma, Tone)</option>
+					</optgroup>
+					<optgroup label={t('processing.perceptual')}>
+						<option value="oklab">Oklab</option>
+						<option value="oklch">Oklch</option>
+					</optgroup>
+					<optgroup label={t('processing.lumaChroma')}>
+						<option value="ycbcr">YCbCr (BT.601)</option>
+					</optgroup>
+					<optgroup label={t('processing.basic')}>
+						<option value="rgb">RGB</option>
+						<option value="hsl">HSL</option>
+					</optgroup>
+				</select>
+			</label>
+
+			{#if showsPropagationControls(app.ditherMethodId)}
+				<!-- Channel Propagation -->
+				<div class="space-y-2 pt-1">
+					<div class="text-xs text-[var(--color-muted)]">{t('processing.channelPropagation')}</div>
+					<label class="block">
+						<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+							<span>{t('processing.redPropagation')}</span>
+							<span>{app.ditherPropagationRed}%</span>
+						</div>
+						<input type="range" min="0" max="200" step="1" bind:value={app.ditherPropagationRed} class="w-full" />
+					</label>
+					<label class="block">
+						<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+							<span>{t('processing.greenPropagation')}</span>
+							<span>{app.ditherPropagationGreen}%</span>
+						</div>
+						<input type="range" min="0" max="200" step="1" bind:value={app.ditherPropagationGreen} class="w-full" />
+					</label>
+					<label class="block">
+						<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+							<span>{t('processing.bluePropagation')}</span>
+							<span>{app.ditherPropagationBlue}%</span>
+						</div>
+						<input type="range" min="0" max="200" step="1" bind:value={app.ditherPropagationBlue} class="w-full" />
+					</label>
+				</div>
+			{/if}
+		</div>
 
 		<!-- Processing Mode -->
 		<label class="block">
@@ -347,3 +381,6 @@
 		onClose={() => (showCompare = false)}
 	/>
 {/if}
+
+<style>
+</style>

@@ -21,12 +21,12 @@
 	let processingTimer: ReturnType<typeof setTimeout> | null = null;
 	let processingRunId = 0;
 
-	// Toggle between original / pre-processed / map art
-	type ViewMode = 'mapart' | 'preprocess' | 'original';
-	let viewMode = $state<ViewMode>('mapart');
+	// Pipeline view modes: File → Image → Pre-proc → Result
+	type ViewMode = 'file' | 'image' | 'preprocess' | 'result';
+	let viewMode = $state<ViewMode>('result');
 	// Non-reactive storage for source snapshots (avoid deep proxy on ImageData)
-	let _rawSource: ImageData | null = null;
-	let _preProcessed: ImageData | null = null;
+	let _rawSource: ImageData | null = null;     // after crop + BCS (stages ②③)
+	let _preProcessed: ImageData | null = null;   // after bilateral filter (stage ④)
 	let sourceVersion = $state(0); // bump to trigger redraw
 
 	// ── Memory diagnostics ──
@@ -44,17 +44,61 @@
 		return () => { unsub1(); unsub2(); };
 	});
 
-	const VIEW_LABELS: Record<ViewMode, string> = {
-		original: 'preview.original',
-		preprocess: 'preview.preprocessed',
-		mapart: 'preview.mapart',
-	};
-	const VIEW_CYCLE: ViewMode[] = ['original', 'preprocess', 'mapart'];
+	const VIEW_STAGES: { mode: ViewMode; label: string }[] = [
+		{ mode: 'file', label: 'preview.file' },
+		{ mode: 'image', label: 'preview.image' },
+		{ mode: 'preprocess', label: 'preview.preprocess' },
+		{ mode: 'result', label: 'preview.result' },
+	];
 
-	function cycleViewMode() {
-		const idx = VIEW_CYCLE.indexOf(viewMode);
-		viewMode = VIEW_CYCLE[(idx + 1) % VIEW_CYCLE.length];
-		if (viewMode !== 'mapart') showBlocks = false;
+	let currentStageIdx = $derived(VIEW_STAGES.findIndex((s) => s.mode === viewMode));
+	let currentStage = $derived(VIEW_STAGES[currentStageIdx]);
+
+	function setViewMode(mode: ViewMode) {
+		viewMode = mode;
+		if (mode !== 'result') showBlocks = false;
+		// Auto-fit when switching modes (dimensions may differ)
+		autoFitCurrentView();
+	}
+
+	function prevStage() {
+		const minIdx = app.sourceImage ? 0 : (sourceVersion > 0 ? 1 : VIEW_STAGES.length - 1);
+		if (currentStageIdx > minIdx) setViewMode(VIEW_STAGES[currentStageIdx - 1].mode);
+	}
+
+	function nextStage() {
+		if (currentStageIdx < VIEW_STAGES.length - 1) setViewMode(VIEW_STAGES[currentStageIdx + 1].mode);
+	}
+
+	/** Fit the currently displayed content to the container */
+	function autoFitCurrentView() {
+		if (!containerRef) return;
+		let w: number, h: number;
+		if (viewMode === 'file') {
+			const src = app.sourceImage;
+			if (!src) return;
+			w = src.naturalWidth || src.width;
+			h = src.naturalHeight || src.height;
+		} else if (viewMode === 'image') {
+			w = _rawSource?.width ?? canvasWidth;
+			h = _rawSource?.height ?? canvasHeight;
+		} else if (viewMode === 'preprocess') {
+			w = _preProcessed?.width ?? canvasWidth;
+			h = _preProcessed?.height ?? canvasHeight;
+		} else {
+			w = app.resultImageData?.width ?? canvasWidth;
+			h = app.resultImageData?.height ?? canvasHeight;
+		}
+		if (w <= 0 || h <= 0) return;
+		panX = 0;
+		panY = 0;
+		const rect = containerRef.getBoundingClientRect();
+		const padX = 40;
+		const padY = 40;
+		const fitZoomX = (rect.width - padX) / w;
+		const fitZoomY = (rect.height - padY) / h;
+		const fitZoom = Math.min(fitZoomX, fitZoomY);
+		app.zoomLevel = Math.max(0.25, Math.min(16, Math.round(fitZoom * 4) / 4));
 	}
 
 	// Block/Color render toggle
@@ -161,8 +205,28 @@
 		if (!canvas) return;
 		void sourceVersion; // track source data changes
 		if (showBlocks) return; // block canvas handles rendering
+
+		// ① File: render source image at native resolution
+		if (viewMode === 'file') {
+			const src = app.sourceImage;
+			if (!src) return;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) return;
+			const w = src.naturalWidth || src.width;
+			const h = src.naturalHeight || src.height;
+			canvas.width = w;
+			canvas.height = h;
+			canvas.style.width = '';
+			canvas.style.height = '';
+			ctx.drawImage(src, 0, 0, w, h);
+			displayWidth = w;
+			displayHeight = h;
+			return;
+		}
+
+		// Use stored ImageData snapshots for non-file modes
 		let imgData: ImageData | null = null;
-		if (viewMode === 'original') imgData = _rawSource;
+		if (viewMode === 'image') imgData = _rawSource;
 		else if (viewMode === 'preprocess') imgData = _preProcessed;
 		else imgData = app.resultImageData;
 		if (!imgData) return;
@@ -324,7 +388,7 @@
 		// Get source pixels (runs on main thread — uses canvas for resize)
 		const { data, width, height } = getSourcePixels(app.sourceImage, settings);
 
-		// Store raw source (after crop/BCS but before filters)
+		// Store raw source (after crop + BCS but before filters)
 		_rawSource = new ImageData(new Uint8ClampedArray(data), width, height);
 
 		// Store pre-processed source (with bilateral filter applied)
@@ -394,6 +458,7 @@
 				app.resultUniqueColors = result.uniqueColors;
 				app.isProcessing = false;
 				app.processingProgress = 1;
+				viewMode = 'result';
 
 				// Log memo stats if present (memo-* dithering methods)
 				if (result.memoStats) {
@@ -416,18 +481,7 @@
 		const result = app.resultImageData;
 		if (result && result !== lastResultRef) {
 			lastResultRef = result;
-			panX = 0;
-			panY = 0;
-			// Auto-fit: calculate zoom to fit canvas in container
-			if (containerRef) {
-				const rect = containerRef.getBoundingClientRect();
-				const padX = 40;
-				const padY = 40;
-				const fitZoomX = (rect.width - padX) / result.width;
-				const fitZoomY = (rect.height - padY) / result.height;
-				const fitZoom = Math.min(fitZoomX, fitZoomY);
-				app.zoomLevel = Math.max(0.25, Math.min(16, Math.round(fitZoom * 4) / 4));
-			}
+			autoFitCurrentView();
 		}
 	});
 
@@ -495,16 +549,7 @@
 	}
 
 	function fitToView() {
-		if (!containerRef || !app.resultImageData) return;
-		const rect = containerRef.getBoundingClientRect();
-		const padX = 40;
-		const padY = 40;
-		const fitZoomX = (rect.width - padX) / app.resultImageData.width;
-		const fitZoomY = (rect.height - padY) / app.resultImageData.height;
-		const fitZoom = Math.min(fitZoomX, fitZoomY);
-		app.zoomLevel = Math.max(0.25, Math.min(16, Math.round(fitZoom * 4) / 4));
-		panX = 0;
-		panY = 0;
+		autoFitCurrentView();
 	}
 
 	function toggleGrid() {
@@ -560,18 +605,22 @@
 		</button>
 	</div>
 
-	<!-- Bottom-left overlay: View mode toggle + Block/Color -->
-	<div class="absolute bottom-2 left-2 z-20 flex gap-1">
+	<!-- Bottom-left overlay: Pipeline stage nav + Block/Color -->
+	<div class="absolute bottom-2 left-2 z-20 flex items-center gap-1">
 		<button
 			class="canvas-overlay-btn"
-			class:canvas-overlay-btn--active={viewMode !== 'mapart'}
-			onclick={cycleViewMode}
-			title={t('preview.cycleView')}
-			disabled={sourceVersion === 0}
-		>
-			{t(VIEW_LABELS[viewMode])}
-		</button>
-		{#if viewMode === 'mapart'}
+			onclick={prevStage}
+			disabled={currentStageIdx <= (app.sourceImage ? 0 : (sourceVersion > 0 ? 1 : VIEW_STAGES.length - 1))}
+		>◀</button>
+		<span class="min-w-[3rem] text-center text-[10px] text-[var(--color-text-muted)] select-none">
+			{t(currentStage.label)}
+		</span>
+		<button
+			class="canvas-overlay-btn"
+			onclick={nextStage}
+			disabled={currentStageIdx >= VIEW_STAGES.length - 1}
+		>▶</button>
+		{#if viewMode === 'result'}
 		<button
 			class="canvas-overlay-btn"
 			class:canvas-overlay-btn--active={showBlocks}
@@ -587,7 +636,8 @@
 	<div
 		bind:this={containerRef}
 		class="relative flex items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)]"
-		style="height: 600px; min-height: 200px; resize: vertical; cursor: {isDragging ? 'grabbing' : 'grab'};"
+		style="height: 600px; min-height: 200px; resize: vertical;"
+		style:cursor={isDragging ? 'grabbing' : 'grab'}
 		onmousedown={handleMouseDown}
 		onmousemove={handleMouseMove}
 		onmouseup={handleMouseUp}
@@ -651,6 +701,12 @@
 		background: var(--color-bg-input, #222);
 		color: var(--color-text, #e5e5e5);
 		opacity: 1;
+	}
+
+	.canvas-overlay-btn:disabled {
+		opacity: 0.35;
+		cursor: default;
+		pointer-events: none;
 	}
 
 	.canvas-overlay-btn--active {

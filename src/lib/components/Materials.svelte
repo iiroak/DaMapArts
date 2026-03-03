@@ -202,7 +202,7 @@
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">{t('materials.title')}</h3>
 		<button
 			class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-[var(--color-muted)] opacity-50 transition-all hover:opacity-100 hover:text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
-			onclick={(e) => { e.stopPropagation(); infoModal.openTab('export'); }}
+			onclick={(e) => { e.stopPropagation(); infoModal.openTab('export', 'materials'); }}
 			title={t('materials.help')}
 		>?</button>
 		<button

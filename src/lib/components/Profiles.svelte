@@ -73,6 +73,10 @@
 	}
 
 	function applyProfile(data: Record<string, any>) {
+		// Normalize legacy color space values
+		if (data.colorSpace === 'lab' || data.colorSpace === 'euclidian') {
+			data.colorSpace = data.colorSpace === 'lab' ? 'mapartcraft-default' : 'rgb';
+		}
 		for (const key of PROFILE_FIELDS) {
 			if (key in data) {
 				(app as any)[key] = typeof data[key] === 'object' && data[key] !== null
@@ -189,7 +193,7 @@
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">{t('profiles.title')}</h3>
 		<button
 			class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-[var(--color-muted)] opacity-50 transition-all hover:opacity-100 hover:text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
-			onclick={(e) => { e.stopPropagation(); infoModal.openTab('general'); }}
+			onclick={(e) => { e.stopPropagation(); infoModal.openTab('general', 'profiles'); }}
 			title={t('profiles.help')}
 		>?</button>
 		<button

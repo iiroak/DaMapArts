@@ -12,6 +12,7 @@
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
 	<div class="flex w-full items-center gap-2">
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
+			<span class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold leading-none text-white">4</span>
 			{t('preprocess.title')}
 		</h3>
 		<button
@@ -129,6 +130,7 @@
 				<span>{t('preprocess.neutral')}</span>
 				<span>{t('preprocess.prioritizeBrightness')}</span>
 			</div>
+			<span class="mt-0.5 block text-[10px] italic text-[var(--color-muted)] opacity-70">{t('preprocess.luminanceHint')}</span>
 		</label>
 	</div>
 	{/if}

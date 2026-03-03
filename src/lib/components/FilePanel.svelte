@@ -97,7 +97,10 @@
 
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
 	<div class="flex w-full items-center gap-2">
-		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">{t('file.title')}</h3>
+		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
+			<span class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold leading-none text-white">1</span>
+			{t('file.title')}
+		</h3>
 		<button
 			class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-[var(--color-muted)] opacity-50 transition-all hover:opacity-100 hover:text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
 			onclick={(e) => { e.stopPropagation(); infoModal.openTab('general'); }}

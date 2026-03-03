@@ -79,7 +79,7 @@
 <style>
 	.beta-dialog {
 		padding: 0;
-		border: none;
+		border: 1px solid var(--color-border);
 		border-radius: 12px;
 		background: var(--color-bg-card);
 		color: var(--color-text);

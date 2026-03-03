@@ -6,12 +6,13 @@
 	const app = getAppState();
 	const t = locale.t;
 
-	let expanded = $state(true);
+	let expanded = $state(false);
 </script>
 
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
 	<div class="flex w-full items-center gap-2">
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
+			<span class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold leading-none text-white">3</span>
 			{t('image.title')}
 		</h3>
 		<button
@@ -45,9 +46,10 @@
 		{#if app.cropMode === 'manual'}
 			<div class="space-y-2">
 				<label class="block">
-					<span class="mb-1 block text-xs text-[var(--color-muted)]">
-						{t('image.zoom')} {app.cropZoom.toFixed(1)}×
-					</span>
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>{t('image.zoom')}</span>
+						<span>{app.cropZoom.toFixed(1)}×</span>
+					</div>
 					<input
 						type="range"
 						min="1"
@@ -58,9 +60,10 @@
 					/>
 				</label>
 				<label class="block">
-					<span class="mb-1 block text-xs text-[var(--color-muted)]">
-						{t('image.offsetX')} {app.cropOffsetX}%
-					</span>
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>{t('image.offsetX')}</span>
+						<span>{app.cropOffsetX}%</span>
+					</div>
 					<input
 						type="range"
 						min="0"
@@ -70,9 +73,10 @@
 					/>
 				</label>
 				<label class="block">
-					<span class="mb-1 block text-xs text-[var(--color-muted)]">
-						{t('image.offsetY')} {app.cropOffsetY}%
-					</span>
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>{t('image.offsetY')}</span>
+						<span>{app.cropOffsetY}%</span>
+					</div>
 					<input
 						type="range"
 						min="0"
@@ -88,9 +92,10 @@
 		<div class="space-y-2">
 			<span class="block text-xs font-medium text-[var(--color-muted)]">{t('image.adjustments')}</span>
 			<label class="block">
-				<span class="mb-1 block text-xs text-[var(--color-muted)]">
-					{t('image.brightness')} {app.brightness}%
-				</span>
+				<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+					<span>{t('image.brightness')}</span>
+					<span>{app.brightness}%</span>
+				</div>
 				<input
 					type="range"
 					min="50"
@@ -100,9 +105,10 @@
 				/>
 			</label>
 			<label class="block">
-				<span class="mb-1 block text-xs text-[var(--color-muted)]">
-					{t('image.contrast')} {app.contrast}%
-				</span>
+				<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+					<span>{t('image.contrast')}</span>
+					<span>{app.contrast}%</span>
+				</div>
 				<input
 					type="range"
 					min="50"
@@ -112,9 +118,10 @@
 				/>
 			</label>
 			<label class="block">
-				<span class="mb-1 block text-xs text-[var(--color-muted)]">
-					{t('image.saturation')} {app.saturation}%
-				</span>
+				<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+					<span>{t('image.saturation')}</span>
+					<span>{app.saturation}%</span>
+				</div>
 				<input
 					type="range"
 					min="0"
@@ -133,9 +140,10 @@
 			</label>
 			{#if app.transparencyEnabled}
 				<label class="block">
-					<span class="mb-1 block text-xs text-[var(--color-muted)]">
-						{t('image.tolerance')} {app.transparencyTolerance}
-					</span>
+					<div class="mb-1 flex items-center justify-between text-xs text-[var(--color-muted)]">
+						<span>{t('image.tolerance')}</span>
+						<span>{app.transparencyTolerance}</span>
+					</div>
 					<input
 						type="range"
 						min="1"

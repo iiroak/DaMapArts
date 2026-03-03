@@ -2,6 +2,7 @@
 	import { base } from '$app/paths';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
+	import changelog from '$lib/data/changelog.js';
 
 	interface Props {
 		open: boolean;
@@ -14,6 +15,7 @@
 
 	const tabs: { id: string }[] = [
 		{ id: 'about' },
+		{ id: 'changelog' },
 		{ id: 'technology' },
 		{ id: 'general' },
 		{ id: 'preprocessing' },
@@ -27,11 +29,27 @@
 
 	let activeTab = $state('about');
 	let dialogEl: HTMLDialogElement | undefined = $state(undefined);
+	let contentEl: HTMLDivElement | undefined = $state(undefined);
 
 	// Sync with store tab when opening from external (?) buttons
 	$effect(() => {
 		if (open && infoModal.tab) {
 			activeTab = infoModal.tab;
+		}
+	});
+
+	// Scroll to anchor after tab content renders
+	$effect(() => {
+		if (open && activeTab && infoModal.anchor && contentEl) {
+			const id = infoModal.anchor;
+			// Use a tick to let the DOM render the new tab content
+			requestAnimationFrame(() => {
+				const target = contentEl?.querySelector(`#${CSS.escape(id)}`);
+				if (target) {
+					target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					infoModal.anchor = null;
+				}
+			});
 		}
 	});
 
@@ -112,8 +130,8 @@
 							{:else if tab.id === 'shortcuts'}
 								<rect x="2" y="4" width="20" height="16" rx="2" ry="2" /><line x1="6" y1="8" x2="6.01" y2="8" /><line x1="10" y1="8" x2="10.01" y2="8" /><line x1="14" y1="8" x2="14.01" y2="8" /><line x1="18" y1="8" x2="18.01" y2="8" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="6" y1="16" x2="6.01" y2="16" /><line x1="18" y1="16" x2="18.01" y2="16" />
 							{:else if tab.id === 'faq'}
-								<circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
-							{/if}
+								<circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />						{:else if tab.id === 'changelog'}
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />							{/if}
 						</svg>
 						<span class="tab-label">{t(`info.tab.${tab.id}`)}</span>
 					</button>
@@ -121,7 +139,7 @@
 			</nav>
 
 			<!-- Right: Content -->
-			<div class="info-content">
+			<div class="info-content" bind:this={contentEl}>
 				{#if activeTab === 'about'}
 					<div class="content-section about-section">
 						<div class="about-info">
@@ -212,12 +230,12 @@
 							<li>{@html t('info.general.layout4')}</li>
 						</ul>
 						<div class="info-divider"></div>
-						<h4 class="content-subtitle">{t('info.general.autoTitle')}</h4>
+						<h4 id="auto-processing" class="content-subtitle">{t('info.general.autoTitle')}</h4>
 						<p class="content-text">
 							{@html t('info.general.autoText')}
 						</p>
 						<div class="info-divider"></div>
-						<h4 class="content-subtitle">{t('info.general.profilesTitle')}</h4>
+						<h4 id="profiles" class="content-subtitle">{t('info.general.profilesTitle')}</h4>
 						<p class="content-text">
 							{@html t('info.general.profilesText')}
 						</p>
@@ -229,7 +247,7 @@
 							<li>{@html t('info.general.profilesLi5')}</li>
 						</ul>
 						<div class="info-divider"></div>
-						<h4 class="content-subtitle">{t('info.general.dataTitle')}</h4>
+						<h4 id="data-formats" class="content-subtitle">{t('info.general.dataTitle')}</h4>
 						<p class="content-text">
 							{t('info.general.dataText')}
 						</p>
@@ -273,6 +291,26 @@
 				{:else if activeTab === 'faq'}
 					<div class="content-section">
 						{@html t('info.faq.html')}
+					</div>
+
+				{:else if activeTab === 'changelog'}
+					<div class="content-section">
+						<h3 class="content-title">{t('info.tab.changelog')}</h3>
+						{#each changelog as release}
+							<div class="changelog-release">
+								<div class="changelog-version-row">
+									<span class="changelog-version">{release.version}</span>
+								</div>
+								{#each release.categories as cat}
+									<h4 class="content-subtitle changelog-cat">{t(`info.changelog.cat.${cat.key}`)}</h4>
+									<ul class="info-list">
+										{#each cat.items as item}
+											<li>{item}</li>
+										{/each}
+									</ul>
+								{/each}
+							</div>
+						{/each}
 					</div>
 				{/if}
 			</div>
@@ -698,5 +736,32 @@
 		padding: 1px 4px;
 		border-radius: 3px;
 		font-size: 0.8rem;
+	}
+
+	/* ── Changelog ── */
+	.changelog-release {
+		margin-bottom: 18px;
+	}
+
+	.changelog-release:last-child {
+		margin-bottom: 0;
+	}
+
+	.changelog-version-row {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		margin-bottom: 6px;
+	}
+
+	.changelog-version {
+		font-size: 15px;
+		font-weight: 700;
+		color: var(--color-text);
+		letter-spacing: -0.01em;
+	}
+
+	.changelog-cat {
+		margin-top: 6px;
 	}
 </style>

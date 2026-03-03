@@ -180,7 +180,7 @@ export function createAppState(): AppState {
     ditherPropagationRed: 100,
     ditherPropagationGreen: 100,
     ditherPropagationBlue: 100,
-    colorSpace: 'lab' as ColorSpace,
+    colorSpace: 'mapartcraft-default' as ColorSpace,
 
     // Crop
     cropMode: 'center',

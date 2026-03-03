@@ -24,6 +24,7 @@
 
 		const tabByParam: Record<string, InfoTab> = {
 			about: 'about',
+			changelog: 'changelog',
 			technology: 'technology',
 			general: 'general',
 			preprocessing: 'preprocessing',
@@ -65,9 +66,9 @@
 			<aside class="space-y-4 overflow-y-auto">
 				<FilePanel />
 				<MapPanel />
+				<ImageSettings />
 				<PreProcessingSettings />
 				<ProcessingSettings />
-				<ImageSettings />
 			</aside>
 
 			<!-- Center: Canvas preview + Block selection below -->
