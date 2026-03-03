@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { getAppState } from '$lib/stores/index.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
 	import { buildActivePalette, getToneKeysForStaircasing } from '$lib/palette/colours.js';
 	import { getSourcePixels } from '$lib/processor/crop.js';
 	import { processAsync } from '$lib/processor/backend.js';
 	import { applyBilateralFilter } from '$lib/processor/bilateralFilter.js';
+	import { registerSource } from '$lib/utils/memDiag.js';
 	import type { ProcessorSettings } from '$lib/processor/types.js';
 	import type { ToneKey } from '$lib/types/colours.js';
 
@@ -27,6 +28,21 @@
 	let _rawSource: ImageData | null = null;
 	let _preProcessed: ImageData | null = null;
 	let sourceVersion = $state(0); // bump to trigger redraw
+
+	// ── Memory diagnostics ──
+	onMount(() => {
+		const unsub1 = registerSource(() => ({
+			label: 'MapPreview._rawSource',
+			bytes: _rawSource ? _rawSource.data.byteLength : 0,
+			detail: _rawSource ? `${_rawSource.width}×${_rawSource.height}` : 'null',
+		}));
+		const unsub2 = registerSource(() => ({
+			label: 'MapPreview._preProcessed',
+			bytes: _preProcessed ? _preProcessed.data.byteLength : 0,
+			detail: _preProcessed ? `${_preProcessed.width}×${_preProcessed.height}` : 'null',
+		}));
+		return () => { unsub1(); unsub2(); };
+	});
 
 	const VIEW_LABELS: Record<ViewMode, string> = {
 		original: 'preview.original',
@@ -166,8 +182,10 @@
 	// Draw block texture view
 	$effect(() => {
 		if (!canvas || !showBlocks) return;
-		const entries = app.resultPixelEntries;
-		if (!entries || entries.length === 0) return;
+		const indices = app.resultPixelIndices;
+		const pal = app.resultPalette;
+		if (!indices || indices.length === 0 || !pal) return;
+		const TRANSPARENT_INDEX = 0xFFFF;
 		const w = canvasWidth;
 		const h = canvasHeight;
 		// Track display dimensions for the grid
@@ -186,7 +204,9 @@
 			ctx.imageSmoothingEnabled = false;
 			for (let y = 0; y < h; y++) {
 				for (let x = 0; x < w; x++) {
-					const entry = entries[y * w + x];
+					const pIdx = indices[y * w + x];
+					if (pIdx === TRANSPARENT_INDEX) continue;
+					const entry = pal[pIdx];
 					if (!entry || entry.colourSetId === '-1') continue;
 					// Always use blockId 0 (full block like wool) for the texture preview
 					const sx = 0;
@@ -334,14 +354,23 @@
 		}
 		sourceVersion++;
 
+		// If bilateral was already applied for the preview, pass the filtered
+		// buffer to the pipeline and disable the flag so it won't re-apply.
+		const pixelsForPipeline = settings.bilateralEnabled
+			? new Uint8ClampedArray(_preProcessed.data)
+			: data;
+		const pipelineSettings = settings.bilateralEnabled
+			? { ...settings, bilateralEnabled: false }
+			: settings;
+
 		// Process asynchronously (GPU / Worker / Main thread depending on mode)
 		processAsync(
 			{
-				rgbaData: data,
+				rgbaData: pixelsForPipeline,
 				width,
 				height,
 				palette,
-				settings,
+				settings: pipelineSettings,
 				selectedBlocks: app.selectedBlocks,
 			},
 			{
@@ -358,12 +387,20 @@
 
 				const pixelData = new Uint8ClampedArray(result.rgbaData);
 				app.resultImageData = new ImageData(pixelData, width, height);
-				app.resultPixelEntries = result.pixelEntries;
+				app.resultPixelIndices = result.pixelIndices;
+				app.resultPalette = palette;
 				app.resultMaps = result.maps;
 				app.resultTotalPixels = result.totalPixels;
 				app.resultUniqueColors = result.uniqueColors;
 				app.isProcessing = false;
 				app.processingProgress = 1;
+
+				// Log memo stats if present (memo-* dithering methods)
+				if (result.memoStats) {
+					console.group('%c📊 Memo Dithering Stats', 'color: #ffb74d; font-weight: bold');
+					console.table(result.memoStats);
+					console.groupEnd();
+				}
 			})
 			.catch((err) => {
 				if (myRunId !== processingRunId) return;
@@ -540,7 +577,7 @@
 			class:canvas-overlay-btn--active={showBlocks}
 			onclick={() => (showBlocks = !showBlocks)}
 			title={t('preview.toggleBlocks')}
-			disabled={!app.resultPixelEntries}
+			disabled={!app.resultPixelIndices}
 		>
 			{showBlocks ? t('preview.block') : t('preview.color')}
 		</button>

@@ -75,6 +75,18 @@
 	function isMemoPattern(methodId: string): boolean {
 		return methodId.startsWith('memo-pattern');
 	}
+
+	function getMemoStateBitsDisplayValue(): number {
+		const q = Number.isFinite(app.memoQuantize) ? app.memoQuantize : 8;
+		const clamped = Math.max(0, Math.min(8, Math.round(q)));
+		return 8 - clamped;
+	}
+
+	function handleMemoStateBitsInput(e: Event): void {
+		const raw = Number((e.target as HTMLInputElement).value);
+		const displayBits = Number.isFinite(raw) ? Math.max(0, Math.min(8, Math.round(raw))) : 0;
+		app.memoQuantize = 8 - displayBits;
+	}
 </script>
 
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
@@ -166,12 +178,20 @@
 					</label>
 					<label class="block">
 						<div class="mb-1 text-xs text-[var(--color-muted)]">State Bits</div>
-						<input type="number" min="0" max="8" bind:value={app.memoQuantize} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm" />
+						<input
+							type="number"
+							min="0"
+							max="8"
+							value={getMemoStateBitsDisplayValue()}
+							oninput={handleMemoStateBitsInput}
+							class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm"
+						/>
+						<div class="mt-1 text-[10px] text-[var(--color-muted)]">0 = no state key (faster), 8 = full state key (slowest)</div>
 					</label>
 				</div>
 				<label class="flex items-center gap-2 text-xs">
 					<input type="checkbox" bind:checked={app.memoUseLab} />
-					<span class="text-[var(--color-muted)]">LAB distance</span>
+					<span class="text-[var(--color-muted)]">LAB distance (MapartCraft LAB, not strict CIELAB)</span>
 				</label>
 				<label class="flex items-center gap-2 text-xs">
 					<input type="checkbox" bind:checked={app.memoClampToPalette} />

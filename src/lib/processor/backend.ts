@@ -235,7 +235,8 @@ async function processOnGPU(
     paletteLookup.set(key, p);
   }
 
-  const pixelEntries: { colourSetId: string; toneKey: ToneKey }[] = new Array(totalPixels);
+  const pixelIndices = new Uint16Array(totalPixels);
+  pixelIndices.fill(0xFFFF); // TRANSPARENT_INDEX
   const usedColors = new Set<string>();
   const mapSizeX = input.settings.mapSizeX;
   const mapSizeZ = input.settings.mapSizeZ;
@@ -255,7 +256,7 @@ async function processOnGPU(
 
     const p = paletteLookup.get(key);
     if (p) {
-      pixelEntries[i] = { colourSetId: p.colourSetId, toneKey: p.toneKey };
+      pixelIndices[i] = p.paletteIndex;
       usedColors.add(`${p.colourSetId}:${p.toneKey}`);
 
       const px = i % width;
@@ -265,16 +266,15 @@ async function processOnGPU(
       if (mz < mapSizeZ && mx < mapSizeX) {
         maps[mz][mx].materials[p.colourSetId] = (maps[mz][mx].materials[p.colourSetId] || 0) + 1;
       }
-    } else {
-      pixelEntries[i] = { colourSetId: '-1', toneKey: 'normal' };
     }
+    // else: pixelIndices already filled with TRANSPARENT_INDEX
   }
 
   onProgress?.(1);
 
   return {
     rgbaData,
-    pixelEntries,
+    pixelIndices,
     maps,
     totalPixels,
     uniqueColors: usedColors.size,

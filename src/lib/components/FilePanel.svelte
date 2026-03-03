@@ -60,7 +60,8 @@
 				app.sourceImage = img;
 				app.sourceFileName = file.name;
 				app.resultImageData = null;
-				app.resultPixelEntries = null;
+				app.resultPixelIndices = null;
+				app.resultPalette = null;
 				app.resultMaps = null;
 			};
 			img.src = reader.result as string;

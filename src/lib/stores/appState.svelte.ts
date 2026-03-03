@@ -7,7 +7,7 @@
  */
 import type { ColoursJSON, PaletteColor, ToneKey } from '$lib/types/colours.js';
 import type { ColorSpace } from '$lib/types/settings.js';
-import type { ProcessorSettings, MapSection, PixelEntry } from '$lib/processor/types.js';
+import type { ProcessorSettings, MapSection } from '$lib/processor/types.js';
 import type { ProcessingMode } from '$lib/processor/backend.js';
 
 // ── JSON data imports ──
@@ -91,7 +91,8 @@ export interface AppState {
 
   // Results
   resultImageData: ImageData | null;
-  resultPixelEntries: PixelEntry[] | null;
+  resultPixelIndices: Uint16Array | null;
+  resultPalette: PaletteColor[] | null;
   resultMaps: MapSection[][] | null;
   resultTotalPixels: number;
   resultUniqueColors: number;
@@ -216,7 +217,8 @@ export function createAppState(): AppState {
 
     // Results
     resultImageData: null,
-    resultPixelEntries: null,
+    resultPixelIndices: null,
+    resultPalette: null,
     resultMaps: null,
     resultTotalPixels: 0,
     resultUniqueColors: 0,

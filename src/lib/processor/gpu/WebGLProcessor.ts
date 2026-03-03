@@ -318,3 +318,20 @@ export function gpuProcess(
     height,
   };
 }
+
+/**
+ * Destroy the cached WebGL context and free all GPU resources.
+ * Call this on page unload to prevent GPU memory leaks across reloads.
+ */
+export function disposeGL(): void {
+  if (_gl) {
+    if (_fb) { _gl.deleteFramebuffer(_fb); _fb = null; }
+    if (_vao) { _gl.deleteVertexArray(_vao); _vao = null; }
+    if (_program) { _gl.deleteProgram(_program); _program = null; }
+    // Force context loss to free GPU memory immediately
+    const ext = _gl.getExtension('WEBGL_lose_context');
+    if (ext) ext.loseContext();
+    _gl = null;
+  }
+  _canvas = null;
+}

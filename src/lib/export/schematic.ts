@@ -70,10 +70,19 @@ export class SchematicBuilder {
   private columnHeightsCache: number[] = [];
   private builtMaterialCounts: Record<string, number> = {};
 
+  /** Pre-computed set of colourSetIds that represent water (mapdatId === 12) */
+  private waterColourIds: Set<string>;
+
   constructor(map: MapData, options: SchematicOptions) {
     this.mapColoursLayout = map.coloursLayout;
     this.mapMaterialsCounts = map.materials;
     this.options = options;
+
+    // Pre-compute water colour IDs once instead of looking up coloursJSON per pixel
+    this.waterColourIds = new Set<string>();
+    for (const [csId, cs] of Object.entries(options.coloursJSON)) {
+      if (cs?.mapdatId === 12) this.waterColourIds.add(csId);
+    }
 
     this.nbtJson = {
       name: '',
@@ -210,7 +219,7 @@ export class SchematicBuilder {
 
   private isWaterColour(entry: ColourLayoutEntry): boolean {
     if (entry.colourSetId === '-1') return false;
-    return this.options.coloursJSON[entry.colourSetId]?.mapdatId === 12;
+    return this.waterColourIds.has(entry.colourSetId);
   }
 
   private getWaterDepth(tone: ToneKey, x: number, z: number): number {
@@ -695,6 +704,27 @@ export class SchematicBuilder {
   }
 
   // ── Public API ──
+
+  /**
+   * Build the physical block layout and count materials WITHOUT serializing to NBT.
+   * Much faster than build() when only material counts are needed.
+   */
+  buildCountsOnly(onProgress?: (percent: number) => void): Record<string, number> {
+    this.constructPaletteLookups();
+    this.setNbtJsonPalette();
+
+    for (let col = 0; col < this.mapColoursLayout.length; col++) {
+      this.getPhysicalLayoutColumn(col);
+      onProgress?.((col + 1) / this.mapColoursLayout.length);
+    }
+
+    if (this.options.whereSupportBlocks === SupportBlockModes.WATER || this.options.waterSupportEnabled) {
+      this.addWaterSupportBlocks();
+    }
+
+    this.buildRealMaterialCountsFromPlacedBlocks();
+    return this.getBuiltMaterialCounts();
+  }
 
   /**
    * Build the complete schematic NBT binary data.

@@ -3,7 +3,6 @@
  */
 export type {
   ProcessorSettings,
-  PixelEntry,
   MapSection,
   ProcessorResult,
   ProcessorWorkerInput,

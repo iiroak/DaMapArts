@@ -31,6 +31,22 @@
 	let _bgPaused = false;
 	let _bgResumeResolve: (() => void) | null = null;
 
+	/**
+	 * Clear the module-level compare cache to free data URLs.
+	 * Called from +layout.svelte on page unload.
+	 */
+	export function clearCompareCache(): void {
+		if (_compareCache) {
+			// Release data URL strings (can be large PNG base64)
+			for (const entry of _compareCache.results) {
+				entry.dataUrl = null;
+			}
+			_compareCache = null;
+		}
+		_bgCancelled = true;
+		_bgGenerating = false;
+	}
+
 	// ── Persisted UI settings (survive modal close/reopen) ──
 	let _savedRenderMode: 'full' | 'preview' = 'preview';
 	let _savedPreviewSize = 1;
@@ -58,6 +74,7 @@
 	import { processAsync, getPoolSize } from '$lib/processor/backend.js';
 	import { DITHER_METHODS } from '$lib/dither/index.js';
 	import { computePerceptualFidelity } from '$lib/utils/fidelity.js';
+	import { registerSource, estimateObjectSize } from '$lib/utils/memDiag.js';
 	import type { ProcessorSettings } from '$lib/processor/types.js';
 	import type { ColorSpace } from '$lib/types/settings.js';
 
@@ -381,6 +398,25 @@
 	onMount(() => {
 		dialogEl?.showModal();
 
+		// ── Memory diagnostics ──
+		const unsubMem = registerSource(() => {
+			if (!_compareCache) return { label: 'CompareModal._compareCache', bytes: 0, detail: 'null' };
+			let dataUrlBytes = 0;
+			let count = 0;
+			for (const r of _compareCache.results) {
+				if (r.dataUrl) {
+					dataUrlBytes += r.dataUrl.length * 2; // JS string = 2 bytes/char
+					count++;
+				}
+			}
+			const structBytes = estimateObjectSize(_compareCache) - dataUrlBytes; // avoid double-count
+			return {
+				label: 'CompareModal._compareCache',
+				bytes: dataUrlBytes + structBytes,
+				detail: `${count} thumbnails, ${_compareCache.results.length} total entries`,
+			};
+		});
+
 		if (_compareCache) {
 			// Try to match cache with various render modes
 			for (const mode of ['preview', 'full'] as RenderMode[]) {
@@ -391,11 +427,14 @@
 						previewSize = ps;
 						started = true;
 						restoreFromCache();
-						return;
+						// Still unregister mem source on destroy but after return
+						break;
 					}
 				}
 			}
 		}
+
+		return () => { unsubMem(); };
 	});
 
 	onDestroy(() => {

@@ -24,7 +24,8 @@
 				app.sourceFileName = file.name;
 				// Reset results
 				app.resultImageData = null;
-				app.resultPixelEntries = null;
+				app.resultPixelIndices = null;
+				app.resultPalette = null;
 				app.resultMaps = null;
 			};
 			img.src = reader.result as string;

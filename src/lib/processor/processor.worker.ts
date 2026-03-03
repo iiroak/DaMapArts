@@ -40,9 +40,9 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   const result = processPixels(input);
 
-  // Transfer the large RGBA buffer for zero-copy
+  // Transfer the large buffers for zero-copy
   (self as unknown as Worker).postMessage(
     { id, type: 'result', output: result } satisfies WorkerResponse,
-    [result.rgbaData.buffer],
+    [result.rgbaData.buffer, result.pixelIndices.buffer],
   );
 };

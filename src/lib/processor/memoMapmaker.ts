@@ -1,5 +1,5 @@
 import type { PaletteColor, RGB, ToneKey } from '$lib/types/colours.js';
-import type { ProcessorSettings, PixelEntry, MapSection } from './types.js';
+import type { ProcessorSettings, MapSection } from './types.js';
 import { rgb2lab } from '$lib/palette/colorSpace.js';
 import { getOrderedMatrix } from '$lib/dither/ordered.js';
 
@@ -274,6 +274,21 @@ function fallbackGreedyColumn(
   return { entries, heights, errs, totalError };
 }
 
+export interface MemoStats {
+  /** Peak memo Map size across all column solves */
+  peakMemoEntries: number;
+  /** Total memo entries created across all column solves */
+  totalMemoEntries: number;
+  /** Number of columns processed */
+  columnsProcessed: number;
+  /** Number of subdivision fallbacks (column too large for memo) */
+  subdivisions: number;
+  /** Number of greedy fallbacks (chunk too small after subdivisions) */
+  greedyFallbacks: number;
+  /** Estimated peak memo bytes (rough) */
+  peakMemoBytes: number;
+}
+
 export function processMemoMapmaker(input: {
   rgbaData: Uint8ClampedArray;
   rgbFloat: Float32Array;
@@ -284,13 +299,24 @@ export function processMemoMapmaker(input: {
   onProgress?: (p: number) => void;
 }): {
   rgbaData: Uint8ClampedArray;
-  pixelEntries: PixelEntry[];
+  pixelIndices: Uint16Array;
   maps: MapSection[][];
   totalPixels: number;
   uniqueColors: number;
+  memoStats?: MemoStats;
 } {
   const { rgbaData, rgbFloat, width, height, palette, settings, onProgress } = input;
   const totalPixels = width * height;
+
+  // ── Memo stats tracking ──
+  const memoStats: MemoStats = {
+    peakMemoEntries: 0,
+    totalMemoEntries: 0,
+    columnsProcessed: 0,
+    subdivisions: 0,
+    greedyFallbacks: 0,
+    peakMemoBytes: 0,
+  };
 
   const mapSizeX = settings.mapSizeX;
   const mapSizeZ = settings.mapSizeZ;
@@ -306,7 +332,8 @@ export function processMemoMapmaker(input: {
   }
 
   const outputRGBA = new Uint8ClampedArray(totalPixels * 4);
-  const pixelEntries: PixelEntry[] = new Array(totalPixels);
+  const pixelIndices = new Uint16Array(totalPixels);
+  pixelIndices.fill(0xFFFF); // TRANSPARENT_INDEX
   const usedColors = new Set<string>();
 
   const tonePalette: Record<ToneKey, PaletteColor[]> = {
@@ -360,8 +387,23 @@ export function processMemoMapmaker(input: {
 
   const nextErrorMap = new Float64Array(height * 3);
 
+  // Closure for memo stats tracking
+  // Rough estimate: each SolveResult entry ≈ (3 arrays × avgLen × 8 bytes) + 64 overhead
+  const _trackMemo = (memoSize: number, chunkHeight: number) => {
+    if (memoSize > memoStats.peakMemoEntries) {
+      memoStats.peakMemoEntries = memoSize;
+      // Rough byte estimate: each Map entry = key string (~30 bytes) + SolveResult
+      // SolveResult = ~3 arrays of avg chunkHeight/2 + overhead
+      const avgArrayLen = Math.ceil(chunkHeight / 2);
+      const entryBytes = 30 + (avgArrayLen * 3 * 8) + (avgArrayLen * 64) + 96;
+      memoStats.peakMemoBytes = memoSize * entryBytes;
+    }
+    memoStats.totalMemoEntries += memoSize;
+  };
+
   for (let x = 0; x < width; x++) {
     if (onProgress && (x & 3) === 0) onProgress(x / width);
+    memoStats.columnsProcessed++;
 
     const colRgb: RGBObj[] = new Array(height);
     const errorMap = nextErrorMap.slice();
@@ -400,7 +442,11 @@ export function processMemoMapmaker(input: {
             : `${pos}|${prevHeight}|${lastBlock}`;
           const cached = memo.get(key);
           if (cached) return cached;
-          if (memo.size > maxCache) return null;
+          if (memo.size > maxCache) {
+            // Track memo size at overflow
+            _trackMemo(memo.size, end - start);
+            return null;
+          }
 
           let best: SolveResult | null = null;
           const fromSamePal = resolveTransitionPalette(prevHeight, prevHeight, tonePalette, palette);
@@ -438,6 +484,8 @@ export function processMemoMapmaker(input: {
           return best;
         };
 
+        // Track diffuse memo size before returning
+        _trackMemo(memo.size, end - start);
         return recur(start, lastHeight, -1, rgbObj(0, 0, 0));
       }
 
@@ -447,7 +495,10 @@ export function processMemoMapmaker(input: {
         const key = `${pos}|${prevHeight}`;
         const cached = memo.get(key);
         if (cached) return cached;
-        if (memo.size > maxCache) return null;
+        if (memo.size > maxCache) {
+          _trackMemo(memo.size, end - start);
+          return null;
+        }
 
         const pix = colRgb[pos];
         const threshold = ordered ? ordered[pos % ordered.length][x % ordered[0].length] : 1;
@@ -493,7 +544,10 @@ export function processMemoMapmaker(input: {
         return best;
       };
 
-      return recur(start, lastHeight);
+      // Track pattern/none memo size before returning
+      const r = recur(start, lastHeight);
+      _trackMemo(memo.size, end - start);
+      return r;
     };
 
     let result: SolveResult | null;
@@ -507,8 +561,10 @@ export function processMemoMapmaker(input: {
       const [start, end] = subdivisions.pop()!;
       result = solveColumn(start, end, sectionLastHeight);
       if (!result) {
+        memoStats.subdivisions++;
         const size = end - start;
         if (size <= 6) {
+          memoStats.greedyFallbacks++;
           const fallback = fallbackGreedyColumn(colRgb.slice(start, end), tonePalette, palette, maxHeight, useLab);
           for (let i = 0; i < fallback.entries.length; i++) {
             assembledEntries[start + i] = fallback.entries[i];
@@ -540,7 +596,7 @@ export function processMemoMapmaker(input: {
         outputRGBA[pix * 4 + 1] = 0;
         outputRGBA[pix * 4 + 2] = 0;
         outputRGBA[pix * 4 + 3] = 0;
-        pixelEntries[pix] = { colourSetId: '-1', toneKey: 'normal' };
+        // pixelIndices already filled with TRANSPARENT sentinel
         continue;
       }
 
@@ -549,7 +605,7 @@ export function processMemoMapmaker(input: {
       outputRGBA[pix * 4 + 1] = entry.rgb[1];
       outputRGBA[pix * 4 + 2] = entry.rgb[2];
       outputRGBA[pix * 4 + 3] = 255;
-      pixelEntries[pix] = { colourSetId: entry.colourSetId, toneKey: entry.toneKey };
+      pixelIndices[pix] = entry.paletteIndex;
       usedColors.add(`${entry.colourSetId}:${entry.toneKey}`);
 
       const mapX = Math.floor(x / 128);
@@ -588,9 +644,10 @@ export function processMemoMapmaker(input: {
 
   return {
     rgbaData: outputRGBA,
-    pixelEntries,
+    pixelIndices,
     maps,
     totalPixels,
     uniqueColors: usedColors.size,
+    memoStats,
   };
 }

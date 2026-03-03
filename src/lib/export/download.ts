@@ -4,8 +4,7 @@
  */
 import { gzip } from 'pako';
 import JSZip from 'jszip';
-import type { ColoursJSON, ToneKey } from '$lib/types/colours.js';
-import type { PixelEntry } from '$lib/processor/types.js';
+import type { ColoursJSON, PaletteColor, ToneKey } from '$lib/types/colours.js';
 import { SchematicBuilder, type ColourLayoutEntry, type MapData, type SchematicOptions } from './schematic.js';
 import { MapdatBuilder, type MapdatOptions } from './mapdat.js';
 
@@ -28,9 +27,13 @@ function buildExactColourCache(
   return cache;
 }
 
-/** Build coloursLayouts from processed pixelEntries for each 128×128 map section */
+/** Sentinel index for transparent/unmatched pixels */
+const TRANSPARENT_INDEX = 0xFFFF;
+
+/** Build coloursLayouts from processed pixelIndices + palette for each 128×128 map section */
 function buildColoursLayouts(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   mapSizeX: number,
   mapSizeZ: number,
   totalWidth: number,
@@ -52,15 +55,18 @@ function buildColoursLayouts(
           const globalX = mx * 128 + col;
           const globalZ = mz * 128 + row;
           const idx = globalZ * totalWidth + globalX;
-          const entry = pixelEntries[idx];
+          const pIdx = pixelIndices[idx];
 
-          columnEntries.push({
-            colourSetId: entry.colourSetId,
-            tone: entry.toneKey,
-          });
+          if (pIdx === TRANSPARENT_INDEX) {
+            columnEntries.push({ colourSetId: '-1', tone: 'normal' });
+          } else {
+            const entry = palette[pIdx];
+            columnEntries.push({
+              colourSetId: entry.colourSetId,
+              tone: entry.toneKey,
+            });
 
-          // Count materials
-          if (entry.colourSetId !== '-1') {
+            // Count materials
             materials[entry.colourSetId] = (materials[entry.colourSetId] || 0) + 1;
           }
         }
@@ -114,13 +120,15 @@ export interface ExportSettings {
  * Export joined NBT (single file, all maps merged).
  */
 export async function exportNBTJoined(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   settings: ExportSettings,
   onProgress?: (percent: number) => void,
 ): Promise<void> {
   const totalWidth = settings.mapSizeX * 128;
   const { layouts, materialsPerMap } = buildColoursLayouts(
-    pixelEntries,
+    pixelIndices,
+    palette,
     settings.mapSizeX,
     settings.mapSizeZ,
     totalWidth,
@@ -150,13 +158,15 @@ export async function exportNBTJoined(
  * Export split NBTs (one per map section, bundled in ZIP).
  */
 export async function exportNBTSplit(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   settings: ExportSettings,
   onProgress?: (percent: number) => void,
 ): Promise<void> {
   const totalWidth = settings.mapSizeX * 128;
   const { layouts, materialsPerMap } = buildColoursLayouts(
-    pixelEntries,
+    pixelIndices,
+    palette,
     settings.mapSizeX,
     settings.mapSizeZ,
     totalWidth,
@@ -201,13 +211,15 @@ export async function exportNBTSplit(
  * Export map.dat files (one per map section).
  */
 export async function exportMapdatSplit(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   settings: ExportSettings,
   onProgress?: (percent: number) => void,
 ): Promise<void> {
   const totalWidth = settings.mapSizeX * 128;
   const { layouts } = buildColoursLayouts(
-    pixelEntries,
+    pixelIndices,
+    palette,
     settings.mapSizeX,
     settings.mapSizeZ,
     totalWidth,
@@ -243,13 +255,15 @@ export async function exportMapdatSplit(
  * Export map.dat files in a ZIP archive.
  */
 export async function exportMapdatZip(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   settings: ExportSettings,
   onProgress?: (percent: number) => void,
 ): Promise<void> {
   const totalWidth = settings.mapSizeX * 128;
   const { layouts } = buildColoursLayouts(
-    pixelEntries,
+    pixelIndices,
+    palette,
     settings.mapSizeX,
     settings.mapSizeZ,
     totalWidth,
@@ -288,13 +302,15 @@ export async function exportMapdatZip(
  * Returns the joined schematic as uncompressed NBT data.
  */
 export function buildNBTForViewer(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   settings: ExportSettings,
   onProgress?: (percent: number) => void,
 ): ArrayBuffer {
   const totalWidth = settings.mapSizeX * 128;
   const { layouts, materialsPerMap } = buildColoursLayouts(
-    pixelEntries,
+    pixelIndices,
+    palette,
     settings.mapSizeX,
     settings.mapSizeZ,
     totalWidth,
@@ -321,13 +337,15 @@ export function buildNBTForViewer(
  * Includes support blocks and water-support additions.
  */
 export function computeRealNBTMaterialCounts(
-  pixelEntries: PixelEntry[],
+  pixelIndices: Uint16Array,
+  palette: PaletteColor[],
   settings: ExportSettings,
   onProgress?: (percent: number) => void,
 ): Record<string, number> {
   const totalWidth = settings.mapSizeX * 128;
   const { layouts, materialsPerMap } = buildColoursLayouts(
-    pixelEntries,
+    pixelIndices,
+    palette,
     settings.mapSizeX,
     settings.mapSizeZ,
     totalWidth,
@@ -346,8 +364,8 @@ export function computeRealNBTMaterialCounts(
     selectedBlocks: settings.selectedBlocks,
   });
 
-  builder.build(onProgress);
-  return builder.getBuiltMaterialCounts();
+  // Use lightweight counting path — skips NBT serialization, normalization, and size calc
+  return builder.buildCountsOnly(onProgress);
 }
 
 // ── Internal helpers ──

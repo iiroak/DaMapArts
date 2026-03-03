@@ -26,15 +26,17 @@
 	}
 
 	function buildExportSettings(): ExportSettings {
+		// Snapshot proxy-wrapped objects to avoid Svelte $state Proxy overhead
+		// during heavy computation (coloursJSON + selectedBlocks accessed millions of times)
 		return {
-			coloursJSON: app.coloursJSON as unknown as ColoursJSON,
+			coloursJSON: $state.snapshot(app.coloursJSON) as unknown as ColoursJSON,
 			version: getVersion(),
 			staircasingId: app.staircasingId,
 			whereSupportBlocks: app.whereSupportBlocks,
 			supportBlock: app.supportBlock,
 			waterSupportEnabled: app.waterSupportEnabled,
 			normalizeExport: app.normalizeExport,
-			selectedBlocks: app.selectedBlocks,
+			selectedBlocks: $state.snapshot(app.selectedBlocks),
 			mapSizeX: app.mapSizeX,
 			mapSizeZ: app.mapSizeZ,
 			filename: 'mapart',
@@ -54,23 +56,26 @@
 	}
 
 	$effect(() => {
-		const entries = app.resultPixelEntries;
-		if (!entries || entries.length === 0 || app.modeId !== 0) {
+		const indices = app.resultPixelIndices;
+		const pal = app.resultPalette;
+		if (!indices || indices.length === 0 || !pal || app.modeId !== 0) {
 			realNbtCounts = null;
 			realNbtTotal = null;
 			return;
 		}
 
 		realNbtLoading = true;
-		const runId = `${entries.length}-${app.staircasingId}-${app.whereSupportBlocks}-${app.supportBlock}-${app.waterSupportEnabled}-${app.mapSizeX}-${app.mapSizeZ}`;
+		const runId = `${indices.length}-${app.staircasingId}-${app.whereSupportBlocks}-${app.supportBlock}-${app.waterSupportEnabled}-${app.mapSizeX}-${app.mapSizeZ}`;
+		// Snapshot palette to avoid proxy overhead during heavy iteration
+		const plainPal = $state.snapshot(pal);
 
 		queueMicrotask(() => {
 			try {
-				const counts = computeRealNBTMaterialCounts(entries, buildExportSettings());
+				const counts = computeRealNBTMaterialCounts(indices, plainPal, buildExportSettings());
 				realNbtCounts = counts;
 				const total = Object.values(counts).reduce((sum, c) => sum + c, 0);
 				// Guard against stale updates if config changed during compute
-				const freshRunId = `${(app.resultPixelEntries?.length ?? 0)}-${app.staircasingId}-${app.whereSupportBlocks}-${app.supportBlock}-${app.waterSupportEnabled}-${app.mapSizeX}-${app.mapSizeZ}`;
+				const freshRunId = `${(app.resultPixelIndices?.length ?? 0)}-${app.staircasingId}-${app.whereSupportBlocks}-${app.supportBlock}-${app.waterSupportEnabled}-${app.mapSizeX}-${app.mapSizeZ}`;
 				if (freshRunId === runId) {
 					realNbtCounts = counts;
 					realNbtTotal = total;

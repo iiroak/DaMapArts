@@ -45,9 +45,9 @@ export interface ProcessorSettings {
   memoMaxDepth: number;
   /** Max memo cache entries before subdivision */
   memoMaxCache: number;
-  /** Quantize bits for diffusion memo state (8 disables quantized color key) */
+  /** Internal quantization shift for diffusion memo state (displayed State Bits = 8 - memoQuantize) */
   memoQuantize: number;
-  /** Compare colors in LAB instead of RGB */
+  /** Compare colors in MapartCraft LAB variant instead of RGB (not strict CIELAB D50/D65) */
   memoUseLab: boolean;
   /** Clamp candidate colors to palette gamut instead of full RGB */
   memoClampToPalette: boolean;
@@ -81,8 +81,8 @@ export interface MapSection {
 export interface ProcessorResult {
   /** Quantized pixel data (RGBA) for display */
   imageData: ImageData;
-  /** Per-pixel palette entries for NBT/mapdat encoding */
-  pixelEntries: PixelEntry[];
+  /** Per-pixel palette index array (use with palette to resolve colourSetId/toneKey) */
+  pixelIndices: Uint16Array;
   /** Per-map material counts */
   maps: MapSection[][];
   /** Total pixel count */
@@ -112,7 +112,7 @@ export interface ProcessorWorkerProgress {
 export interface ProcessorWorkerResult {
   type: 'result';
   rgbaBuffer: ArrayBuffer;
-  pixelEntries: PixelEntry[];
+  pixelIndices: Uint16Array;
   maps: MapSection[][];
   totalPixels: number;
   uniqueColors: number;

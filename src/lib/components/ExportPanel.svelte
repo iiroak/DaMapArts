@@ -45,15 +45,16 @@
 	}
 
 	function buildExportSettings(): ExportSettings {
+		// Snapshot proxy-wrapped objects to avoid $state Proxy overhead in heavy export computation
 		return {
-			coloursJSON: app.coloursJSON as unknown as ColoursJSON,
+			coloursJSON: $state.snapshot(app.coloursJSON) as unknown as ColoursJSON,
 			version: getVersion(),
 			staircasingId: app.staircasingId,
 			whereSupportBlocks: app.whereSupportBlocks,
 			supportBlock: app.supportBlock,
 			waterSupportEnabled: app.waterSupportEnabled,
 			normalizeExport: app.normalizeExport,
-			selectedBlocks: app.selectedBlocks,
+			selectedBlocks: $state.snapshot(app.selectedBlocks),
 			mapSizeX: app.mapSizeX,
 			mapSizeZ: app.mapSizeZ,
 			filename: getBaseFilename(),
@@ -63,7 +64,7 @@
 	}
 
 	function hasResults(): boolean {
-		return app.resultPixelEntries !== null && app.resultPixelEntries.length > 0;
+		return app.resultPixelIndices !== null && app.resultPixelIndices.length > 0 && app.resultPalette !== null;
 	}
 
 	function noBlocksSelected(): boolean {
@@ -72,7 +73,8 @@
 
 	async function handleExport(
 		exportFn: (
-			entries: any,
+			indices: Uint16Array,
+			palette: any[],
 			settings: ExportSettings,
 			onProgress?: (p: number) => void,
 		) => Promise<void> | void,
@@ -88,7 +90,7 @@
 
 		try {
 			const settings = buildExportSettings();
-			await exportFn(app.resultPixelEntries!, settings, (p) => {
+			await exportFn(app.resultPixelIndices!, app.resultPalette!, settings, (p) => {
 				exportProgress = p;
 			});
 		} catch (err) {

@@ -8,7 +8,7 @@
  */
 import type { PaletteColor, ToneKey, RGB } from '$lib/types/colours.js';
 import type { ColorSpace } from '$lib/types/settings.js';
-import type { ProcessorSettings, PixelEntry, MapSection } from './types.js';
+import type { ProcessorSettings, MapSection } from './types.js';
 import { findClosestColor } from '$lib/palette/findClosest.js';
 import {
   rgb2lab,
@@ -263,15 +263,24 @@ export interface EngineInput {
   onProgress?: (percent: number) => void;
 }
 
+/** Sentinel index for transparent / unmatched pixels */
+export const TRANSPARENT_INDEX = 0xFFFF;
+
 export interface EngineOutput {
   /** Quantized RGBA pixels */
   rgbaData: Uint8ClampedArray;
-  /** Per-pixel palette entries */
-  pixelEntries: PixelEntry[];
+  /**
+   * Per-pixel palette index (Uint16Array, ~5 MB for 2.6M pixels).
+   * Each value is an index into the palette array passed as input.
+   * TRANSPARENT_INDEX (0xFFFF) = transparent / no match.
+   */
+  pixelIndices: Uint16Array;
   /** Per-map section materials */
   maps: MapSection[][];
   totalPixels: number;
   uniqueColors: number;
+  /** Memo dithering stats (only present for memo-* methods) */
+  memoStats?: import('./memoMapmaker.js').MemoStats;
 }
 
 /**
@@ -328,7 +337,8 @@ export function processPixels(input: EngineInput): EngineOutput {
 
   // Build output arrays
   const outputRGBA = new Uint8ClampedArray(totalPixels * 4);
-  const pixelEntries: PixelEntry[] = new Array(totalPixels);
+  const pixelIndices = new Uint16Array(totalPixels);
+  pixelIndices.fill(TRANSPARENT_INDEX);
   const usedColors = new Set<string>();
 
   // Initialize map sections
@@ -356,6 +366,10 @@ export function processPixels(input: EngineInput): EngineOutput {
 
   // Color cache for repeated pixels
   const colorCache = new Map<number, PaletteColor>();
+
+  // Cache for findClosest2 (ordered dithering two-closest lookup)
+  type Closest2Result = { dist1: number; dist2: number; color1: PaletteColor; color2: PaletteColor };
+  const closest2Cache = new Map<number, Closest2Result>();
 
   // Determine dither mode
   const methodId = settings.ditherMethod;
@@ -436,7 +450,7 @@ export function processPixels(input: EngineInput): EngineOutput {
             // Smooth: find closest palette colour directly (no dithering)
             const bgClosest = findClosestCached(bgR, bgG, bgB, palette, settings.colorSpace, colorCache, lumWeight);
             const pixIdx = py * width + px;
-            pixelEntries[pixIdx] = { colourSetId: bgClosest.colourSetId, toneKey: bgClosest.toneKey };
+            pixelIndices[pixIdx] = bgClosest.paletteIndex;
             usedColors.add(`${bgClosest.colourSetId}:${bgClosest.toneKey}`);
             outputRGBA[pixIdx * 4] = bgClosest.rgb[0];
             outputRGBA[pixIdx * 4 + 1] = bgClosest.rgb[1];
@@ -461,14 +475,14 @@ export function processPixels(input: EngineInput): EngineOutput {
           outputRGBA[(py * width + px) * 4 + 1] = 0;
           outputRGBA[(py * width + px) * 4 + 2] = 0;
           outputRGBA[(py * width + px) * 4 + 3] = 0;
-          pixelEntries[py * width + px] = { colourSetId: '-1', toneKey: 'normal' };
+          // pixelIndices already filled with TRANSPARENT_INDEX
           continue;
         }
       }
 
       const closest = findClosestCached(rMatch, gMatch, bMatch, palette, settings.colorSpace, colorCache, lumWeight);
       const pixIdx = py * width + px;
-      pixelEntries[pixIdx] = { colourSetId: closest.colourSetId, toneKey: closest.toneKey };
+      pixelIndices[pixIdx] = closest.paletteIndex;
       usedColors.add(`${closest.colourSetId}:${closest.toneKey}`);
 
       outputRGBA[pixIdx * 4] = closest.rgb[0];
@@ -523,7 +537,7 @@ export function processPixels(input: EngineInput): EngineOutput {
             if (settings.backgroundMode === 2) {
               // Smooth: find closest palette colour directly (no dithering)
               const bgClosest = findClosestCached(bgR, bgG, bgB, palette, settings.colorSpace, colorCache, lumWeight);
-              pixelEntries[pixIdx] = { colourSetId: bgClosest.colourSetId, toneKey: bgClosest.toneKey };
+              pixelIndices[pixIdx] = bgClosest.paletteIndex;
               usedColors.add(`${bgClosest.colourSetId}:${bgClosest.toneKey}`);
               outputRGBA[pixIdx * 4] = bgClosest.rgb[0];
               outputRGBA[pixIdx * 4 + 1] = bgClosest.rgb[1];
@@ -548,7 +562,7 @@ export function processPixels(input: EngineInput): EngineOutput {
             outputRGBA[pixIdx * 4 + 1] = 0;
             outputRGBA[pixIdx * 4 + 2] = 0;
             outputRGBA[pixIdx * 4 + 3] = 0;
-            pixelEntries[pixIdx] = { colourSetId: '-1', toneKey: 'normal' };
+            // pixelIndices already filled with TRANSPARENT_INDEX
             continue;
           }
         }
@@ -568,15 +582,21 @@ export function processPixels(input: EngineInput): EngineOutput {
           // Strong edge: pure quantization, no dithering artifacts
           closest = findClosestCached(rMatch, gMatch, bMatch, palette, settings.colorSpace, colorCache, lumWeight);
         } else if (useOrdered) {
-          // Two-closest ordered dithering (original mapartcraft approach)
-          const two = findClosest2([rMatch, gMatch, bMatch], palette, settings.colorSpace, lumWeight);
+          // Two-closest ordered dithering — cached to avoid re-scanning palette
+          const wBits = lumWeight === 1.0 ? 0 : (Math.round(lumWeight * 10) << 24);
+          const c2key = wBits | (rMatch << 16) | (gMatch << 8) | bMatch;
+          let two = closest2Cache.get(c2key);
+          if (!two) {
+            two = findClosest2([rMatch, gMatch, bMatch], palette, settings.colorSpace, lumWeight);
+            closest2Cache.set(c2key, two);
+          }
           const pick = orderedChooseClosest(two.dist1, two.dist2, x, y, methodId);
           closest = pick === 0 ? two.color1 : two.color2;
         } else {
           closest = findClosestCached(rMatch, gMatch, bMatch, palette, settings.colorSpace, colorCache, lumWeight);
         }
 
-        pixelEntries[pixIdx] = { colourSetId: closest.colourSetId, toneKey: closest.toneKey };
+        pixelIndices[pixIdx] = closest.paletteIndex;
         usedColors.add(`${closest.colourSetId}:${closest.toneKey}`);
 
         outputRGBA[pixIdx * 4] = closest.rgb[0];
@@ -642,7 +662,7 @@ export function processPixels(input: EngineInput): EngineOutput {
 
   return {
     rgbaData: outputRGBA,
-    pixelEntries,
+    pixelIndices,
     maps,
     totalPixels,
     uniqueColors: usedColors.size,

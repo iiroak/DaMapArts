@@ -34,14 +34,15 @@ self.onmessage = (e: MessageEvent<ProcessorWorkerInput>) => {
     },
   });
 
-  const buffer = result.rgbaData.buffer as ArrayBuffer;
+  const rgbaBuf = result.rgbaData.buffer as ArrayBuffer;
+  const idxBuf = result.pixelIndices.buffer as ArrayBuffer;
   const msg = {
     type: 'result' as const,
-    rgbaBuffer: buffer,
-    pixelEntries: result.pixelEntries,
+    rgbaBuffer: rgbaBuf,
+    pixelIndices: result.pixelIndices,
     maps: result.maps,
     totalPixels: result.totalPixels,
     uniqueColors: result.uniqueColors,
   };
-  (self as unknown as Worker).postMessage(msg, [buffer]);
+  (self as unknown as Worker).postMessage(msg, [rgbaBuf, idxBuf]);
 };
