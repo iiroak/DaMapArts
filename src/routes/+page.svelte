@@ -2,23 +2,29 @@
 	import { onMount } from 'svelte';
 	import { getAppState } from '$lib/stores/index.js';
 	import { infoModal, type InfoTab } from '$lib/stores/infoModal.svelte.js';
+	import { layoutStore } from '$lib/stores/layoutStore.svelte.js';
 	import Header from '$lib/components/Header.svelte';
-	import ImageUpload from '$lib/components/ImageUpload.svelte';
-	import FilePanel from '$lib/components/FilePanel.svelte';
-	import MapPanel from '$lib/components/MapPanel.svelte';
-	import ProcessingSettings from '$lib/components/ProcessingSettings.svelte';
-	import PreProcessingSettings from '$lib/components/PreProcessingSettings.svelte';
-	import ImageSettings from '$lib/components/ImageSettings.svelte';
-	import BlockSelection from '$lib/components/BlockSelection.svelte';
-	import MapPreview from '$lib/components/MapPreview.svelte';
-	import Materials from '$lib/components/Materials.svelte';
-	import ExportPanel from '$lib/components/ExportPanel.svelte';
-	import Profiles from '$lib/components/Profiles.svelte';
+	import DockZone from '$lib/components/DockZone.svelte';
 	import SettingsButton from '$lib/components/SettingsButton.svelte';
 
 	const app = getAppState();
 
 	onMount(() => {
+		// Force clear old layout data if it doesn't have version field
+		try {
+			const raw = localStorage.getItem('damaparts-layout');
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (!parsed.version || parsed.version < 2) {
+					localStorage.removeItem('damaparts-layout');
+					location.reload();
+					return;
+				}
+			}
+		} catch { /* ignore */ }
+
+		layoutStore.initSizingCSS();
+
 		const info = new URLSearchParams(window.location.search).get('info');
 		if (!info) return;
 
@@ -47,7 +53,7 @@
 <div class="flex h-screen flex-col overflow-hidden">
 <Header />
 
-<main class="mx-auto flex-1 overflow-hidden max-w-[1800px] w-full px-4 py-4">
+<main class="mx-auto flex-1 overflow-hidden w-full px-4 py-4" style="max-width: var(--layout-content-max-width, 1800px);">
 	{#if !app.sourceImage}
 		<!-- Loading state -->
 		<div class="flex h-full items-center justify-center">
@@ -60,32 +66,34 @@
 			</div>
 		</div>
 	{:else}
-		<!-- Editor state -->
-		<div class="grid h-full grid-cols-1 gap-4 lg:grid-cols-[320px_1fr_280px]">
-			<!-- Left sidebar -->
-			<aside class="space-y-4 overflow-y-auto">
-				<FilePanel />
-				<MapPanel />
-				<ImageSettings />
-				<PreProcessingSettings />
-				<ProcessingSettings />
-			</aside>
+		<!-- Dockable Editor Layout -->
+		<div class="dock-layout-grid h-full">
+			<!-- Left zone -->
+			<DockZone zone="left" panelIds={layoutStore.left} class="overflow-y-auto" />
 
-			<!-- Center: Canvas preview + Block selection below -->
-			<section class="flex flex-col gap-4 overflow-y-auto">
-				<MapPreview />
-				<BlockSelection />
-			</section>
+			<!-- Center zone -->
+			<DockZone zone="center" panelIds={layoutStore.center} class="flex flex-col overflow-y-auto" />
 
-			<!-- Right sidebar: Export + Profiles + Materials -->
-			<aside class="space-y-4 overflow-y-auto">
-				<ExportPanel />
-				<Profiles />
-				<Materials />
-			</aside>
+			<!-- Right zone -->
+			<DockZone zone="right" panelIds={layoutStore.right} class="overflow-y-auto" />
 		</div>
 	{/if}
 </main>
 </div>
 
 <SettingsButton />
+
+<style>
+	:global(.dock-layout-grid) {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 16px;
+		gap: var(--layout-zone-gap, 16px);
+	}
+	@media (min-width: 1024px) {
+		:global(.dock-layout-grid) {
+			grid-template-columns: 320px 1fr 280px;
+			grid-template-columns: var(--layout-left-width, 320px) 1fr var(--layout-right-width, 280px);
+		}
+	}
+</style>

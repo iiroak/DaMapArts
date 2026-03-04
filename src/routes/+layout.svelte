@@ -9,6 +9,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import BetaNotice from '$lib/components/BetaNotice.svelte';
 	import UpdateNotice from '$lib/components/UpdateNotice.svelte';
+	import ProfilesModal from '$lib/components/ProfilesModal.svelte';
 	import { clearCompareCache } from '$lib/components/CompareModal.svelte';
 
 	let { children } = $props();
@@ -118,3 +119,4 @@
 <Modal />
 <BetaNotice />
 <UpdateNotice />
+<ProfilesModal />

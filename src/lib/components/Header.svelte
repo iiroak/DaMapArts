@@ -2,6 +2,7 @@
 	import { base } from '$app/paths';
 	import { getAppState } from '$lib/stores/index.js';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
+	import { profilesModal } from '$lib/stores/profilesModal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
 
 	const app = getAppState();
@@ -16,6 +17,16 @@
 
 	<div class="flex items-center gap-4 text-sm">
 		<div class="flex items-center gap-2">
+			<!-- Profiles -->
+			<button
+				class="flex h-8 w-8 items-center justify-center rounded-md text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] hover:bg-[var(--color-bg-hover)]"
+				onclick={() => profilesModal.show()}
+				title={t('header.profiles')}
+			>
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M5.121 17.804A13.937 13.937 0 0 1 12 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+				</svg>
+			</button>
 			<!-- GitHub -->
 			<a
 				href="https://github.com/iiroak/DaMapArts"

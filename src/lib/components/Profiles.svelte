@@ -4,6 +4,7 @@
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
 	import { modal } from '$lib/stores/modal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
+	import { profilesModal } from '$lib/stores/profilesModal.svelte.js';
 
 	const app = getAppState();
 	const t = locale.t;
@@ -189,7 +190,7 @@
 </script>
 
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-	<div class="flex w-full items-center gap-2">
+	<div class="flex w-full items-center gap-2 pl-8">
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">{t('profiles.title')}</h3>
 		<button
 			class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-[var(--color-muted)] opacity-50 transition-all hover:opacity-100 hover:text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
@@ -263,6 +264,17 @@
 					disabled={profiles.length === 0}
 				>{t('profiles.export')}</button>
 			</div>
+
+			<!-- Manage profiles modal -->
+			<button
+				class="flex w-full items-center justify-center gap-1.5 rounded border border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-2 py-1.5 text-xs font-medium text-[var(--color-primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-primary)_20%,transparent)]"
+				onclick={() => profilesModal.show()}
+			>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M5.121 17.804A13.937 13.937 0 0 1 12 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+				</svg>
+				{t('pm.manage')}
+			</button>
 		</div>
 	{/if}
 </div>

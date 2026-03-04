@@ -93,8 +93,8 @@
 		panX = 0;
 		panY = 0;
 		const rect = containerRef.getBoundingClientRect();
-		const padX = 40;
-		const padY = 40;
+		const padX = 16;
+		const padY = 16;
 		const fitZoomX = (rect.width - padX) / w;
 		const fitZoomY = (rect.height - padY) / h;
 		const fitZoom = Math.min(fitZoomX, fitZoomY);
@@ -102,7 +102,9 @@
 	}
 
 	// Block/Color render toggle
+	let expanded = $state(true);
 	let showBlocks = $state(false);
+	let showChunkGrid = $state(false);
 	let blockCanvas = $state<HTMLCanvasElement>(undefined!);
 	let _texturesImg: HTMLImageElement | null = null;
 	const BLOCK_PX = 8; // pixels per block in block view
@@ -315,6 +317,26 @@
 				ctx.beginPath();
 				ctx.moveTo(0, y * 128);
 				ctx.lineTo(gw, y * 128);
+				ctx.stroke();
+			}
+		}
+
+		if (showChunkGrid) {
+			ctx.strokeStyle = 'rgba(64, 180, 255, 0.35)';
+			ctx.lineWidth = 0.4;
+			const chunkSize = 16;
+
+			for (let x = 0; x <= gw; x += chunkSize) {
+				ctx.beginPath();
+				ctx.moveTo(x, 0);
+				ctx.lineTo(x, gh);
+				ctx.stroke();
+			}
+
+			for (let y = 0; y <= gh; y += chunkSize) {
+				ctx.beginPath();
+				ctx.moveTo(0, y);
+				ctx.lineTo(gw, y);
 				ctx.stroke();
 			}
 		}
@@ -555,9 +577,25 @@
 	function toggleGrid() {
 		app.showGrid = !app.showGrid;
 	}
+
+	function toggleChunkGrid() {
+		showChunkGrid = !showChunkGrid;
+	}
 </script>
 
-<div class="relative">
+<div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+	<div class="mb-2 flex items-center justify-between pl-8">
+		<h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">Preview</h3>
+		<button
+			class="flex items-center justify-center"
+			onclick={() => (expanded = !expanded)}
+		>
+			<span class="text-xs text-[var(--color-muted)] transition-transform" class:rotate-90={expanded}>▶</span>
+		</button>
+	</div>
+
+	{#if expanded}
+	<div class="relative">
 	<!-- Left overlay: Zoom + Grid -->
 	<div class="absolute left-2 top-2 z-20 flex items-center gap-1">
 		<button
@@ -584,6 +622,14 @@
 			title={t('preview.toggleGrid')}
 		>
 			{t('preview.grid')}
+		</button>
+		<button
+			class="canvas-overlay-btn"
+			class:canvas-overlay-btn--active={showChunkGrid}
+			onclick={toggleChunkGrid}
+			title="Toggle 16x16 chunk grid"
+		>
+			Chunk
 		</button>
 	</div>
 
@@ -636,7 +682,7 @@
 	<div
 		bind:this={containerRef}
 		class="relative flex items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)]"
-		style="height: 600px; min-height: 200px; resize: vertical;"
+		style="height: 560px; min-height: 200px; resize: vertical;"
 		style:cursor={isDragging ? 'grabbing' : 'grab'}
 		onmousedown={handleMouseDown}
 		onmousemove={handleMouseMove}
@@ -681,6 +727,8 @@
 		<p class="text-[var(--color-muted)]">{t('preview.uploadImage')}</p>
 	{/if}
 	</div>
+	</div>
+	{/if}
 </div>
 
 <style>

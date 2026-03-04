@@ -163,17 +163,17 @@
 	{#if expanded}
 		<div class="mt-2 space-y-3">
 			<!-- Form -->
-			<div class="space-y-2 rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
+			<div class="space-y-2 overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
 				<!-- Block Name -->
 				<label class="block">
 					<span class="mb-0.5 block text-xs font-medium text-[var(--color-muted)]">{t('custom.blockName')}</span>
-					<div class="flex items-center gap-0">
-						<span class="rounded-l border border-r-0 border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-bg)_80%,var(--color-border))] px-2 py-1 text-xs text-[var(--color-muted)]">
+					<div class="flex min-w-0 items-center gap-0">
+						<span class="shrink-0 rounded-l border border-r-0 border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-bg)_80%,var(--color-border))] px-2 py-1 text-xs text-[var(--color-muted)]">
 							minecraft:
 						</span>
 						<input
 							type="text"
-							class="flex-1 rounded-r border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+							class="min-w-0 flex-1 rounded-r border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
 							bind:value={blockName}
 						placeholder={t('custom.placeholder')}
 						/>
@@ -185,10 +185,10 @@
 					<span class="mb-0.5 block text-xs font-medium text-[var(--color-muted)]">{t('custom.nbtTags')}</span>
 					<div class="space-y-1">
 						{#each nbtTags as [tagKey, tagValue], i}
-							<div class="flex items-center gap-1">
+							<div class="grid min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-1">
 								<input
 									type="text"
-									class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+									class="min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
 									value={tagKey}
 									oninput={(e) => onNbtTagChange(i, 0, (e.target as HTMLInputElement).value)}
 									placeholder={t('custom.key')}
@@ -196,7 +196,7 @@
 								<span class="text-xs text-[var(--color-muted)]">:</span>
 								<input
 									type="text"
-									class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+									class="min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
 									value={tagValue}
 									oninput={(e) => onNbtTagChange(i, 1, (e.target as HTMLInputElement).value)}
 									placeholder={t('custom.value')}
@@ -264,7 +264,7 @@
 				</div>
 
 				<!-- Buttons -->
-				<div class="flex gap-2 pt-1">
+				<div class="flex flex-wrap gap-2 pt-1">
 					<button
 						class="flex flex-1 items-center justify-center gap-1.5 rounded bg-[var(--color-primary)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
 						onclick={handleAdd}

@@ -4,13 +4,13 @@
 	import { getAppState } from '$lib/stores/index.js';
 	import { modal } from '$lib/stores/modal.svelte.js';
 	import { infoModal } from '$lib/stores/infoModal.svelte.js';
+	import { profilesModal } from '$lib/stores/profilesModal.svelte.js';
 	import { locale } from '$lib/stores/locale.svelte.js';
 	import type { ColoursJSON, ColourSet, BlockEntry } from '$lib/types/colours.js';
 	import { isBlockAvailable } from '$lib/palette/colours.js';
 	import mapModes from '$lib/data/mapModes.json';
 	import defaultPresetsData from '$lib/data/defaultPresets.json';
 	import coloursJSONBase from '$lib/data/coloursJSON.json';
-	import BlockSelectionAddCustom from './BlockSelectionAddCustom.svelte';
 
 	const app = getAppState();
 	const t = locale.t;
@@ -21,7 +21,6 @@
 	/** Stored custom blocks: Array of [colourSetId, BlockEntry] */
 	type CustomBlock = [string, BlockEntry];
 	let customBlocks = $state<CustomBlock[]>([]);
-	let lastSelectedCustomBlock = $state<{ colourSetId: string; blockId: string } | null>(null);
 
 	function loadCustomBlocks(): CustomBlock[] {
 		try {
@@ -29,12 +28,6 @@
 			if (stored) return JSON.parse(stored) as CustomBlock[];
 		} catch { /* ignore */ }
 		return [];
-	}
-
-	function saveCustomBlocks(blocks: CustomBlock[]) {
-		try {
-			localStorage.setItem(CUSTOM_BLOCKS_KEY, JSON.stringify(blocks));
-		} catch { /* quota exceeded */ }
 	}
 
 	/**
@@ -51,105 +44,7 @@
 		return base;
 	}
 
-	function applyCustomBlocks(blocks: CustomBlock[]) {
-		customBlocks = blocks;
-		saveCustomBlocks(blocks);
-		app.coloursJSON = getMergedColoursJSON(blocks) as any;
-	}
-
 	const supportedVersions = app.supportedVersions as Record<string, { MCVersion: string }>;
-
-	function handleAddCustomBlock(
-		block_colourSetId: string,
-		block_name: string,
-		block_nbtTags: [string, string][],
-		block_versions: Record<string, boolean>,
-		block_needsSupport: boolean,
-		block_flammable: boolean,
-	) {
-		const nameTrimmed = block_name.trim();
-		if (nameTrimmed === '') {
-			modal.showAlert(t('blocks.enterBlockName'), t('blocks.error'));
-			return;
-		}
-		if (Object.values(block_versions).every((v) => !v)) {
-			modal.showAlert(t('blocks.selectVersion'), t('blocks.error'));
-			return;
-		}
-
-		const blockToAdd: BlockEntry = {
-			displayName: nameTrimmed,
-			validVersions: {},
-			supportBlockMandatory: block_needsSupport,
-			flammable: block_flammable,
-			presetIndex: -999, // marker for custom
-		};
-
-		let addedFirstVersion = false;
-		for (const [vKey, isSelected] of Object.entries(block_versions)) {
-			if (!isSelected) continue;
-			const mcVer = supportedVersions[vKey]?.MCVersion;
-			if (!mcVer) continue;
-
-			if (addedFirstVersion) {
-				blockToAdd.validVersions[mcVer] = `&${Object.keys(blockToAdd.validVersions)[0]}`;
-			} else {
-				const args: Record<string, string> = {};
-				for (const [k, v] of block_nbtTags) {
-					const kt = k.trim();
-					const vt = v.trim();
-					if (kt !== '' || vt !== '') {
-						args[kt] = vt;
-					}
-				}
-				blockToAdd.validVersions[mcVer] = { NBTName: nameTrimmed, NBTArgs: args };
-				addedFirstVersion = true;
-			}
-		}
-
-		// Filter out any existing custom block with same colourSet, name, and overlapping versions
-		const newCustomBlocks = customBlocks.filter(
-			([csId, cb]) =>
-				csId !== block_colourSetId ||
-				cb.displayName !== nameTrimmed ||
-				!Object.values(supportedVersions).some(
-					(sv) => sv.MCVersion in cb.validVersions && sv.MCVersion in blockToAdd.validVersions,
-				),
-		);
-		newCustomBlocks.push([block_colourSetId, blockToAdd]);
-
-		applyCustomBlocks(newCustomBlocks);
-		app.selectedBlocks[block_colourSetId] = '-1';
-	}
-
-	function handleDeleteCustomBlock(
-		block_colourSetId: string,
-		block_name: string,
-		block_versions: Record<string, boolean>,
-	) {
-		const nameTrimmed = block_name.trim();
-		if (nameTrimmed === '' || Object.values(block_versions).every((v) => !v)) return;
-
-		const selectedVersions: string[] = [];
-		for (const [vKey, isSelected] of Object.entries(block_versions)) {
-			if (isSelected) {
-				const mcVer = supportedVersions[vKey]?.MCVersion;
-				if (mcVer) selectedVersions.push(mcVer);
-			}
-		}
-
-		const newCustomBlocks = customBlocks.filter(
-			([csId, cb]) =>
-				csId !== block_colourSetId ||
-				cb.displayName !== nameTrimmed ||
-				!Object.values(supportedVersions).some(
-					(sv) => sv.MCVersion in cb.validVersions && selectedVersions.includes(sv.MCVersion),
-				),
-		);
-
-		applyCustomBlocks(newCustomBlocks);
-		app.selectedBlocks[block_colourSetId] = '-1';
-	}
 
 	// ── Version list ──
 	const versions = Object.entries(app.supportedVersions).map(([key, val]: [string, any]) => ({
@@ -406,7 +301,8 @@
 	let importDialogOpen = $state(false);
 	let importCode = $state('');
 	let copiedShare = $state(false);
-	let blocksExpanded = $state(true);
+	let panelExpanded = $state(true);
+	let blocksExpanded = $state(false);
 
 	async function copyShareCode() {
 		try {
@@ -508,14 +404,6 @@
 
 	function selectBlock(colourSetId: string, blockId: string) {
 		app.selectedBlocks[colourSetId] = blockId;
-		// Check if this is a custom block (presetIndex === -999)
-		if (blockId !== '-1') {
-			const cJSON = app.coloursJSON as unknown as ColoursJSON;
-			const block = cJSON[colourSetId]?.blocks[blockId];
-			if (block && block.presetIndex === -999) {
-				lastSelectedCustomBlock = { colourSetId, blockId };
-			}
-		}
 	}
 
 	function enableAll() {
@@ -535,7 +423,7 @@
 
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
 	<!-- Header -->
-	<div class="mb-2 flex items-center justify-between">
+	<div class="mb-2 flex items-center justify-between pl-8">
 		<h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
 			{t('blocks.title')}
 		</h3>
@@ -546,9 +434,16 @@
 				onclick={() => infoModal.openTab('blocks')}
 				title={t('blocks.help')}
 			>?</button>
+			<button
+				class="flex items-center justify-center"
+				onclick={() => (panelExpanded = !panelExpanded)}
+			>
+				<span class="text-xs text-[var(--color-muted)] transition-transform" class:rotate-90={panelExpanded}>▶</span>
+			</button>
 		</div>
 	</div>
 
+	{#if panelExpanded}
 	<!-- Minecraft Version + Presets -->
 	<div class="mb-3 space-y-2 border-b border-[var(--color-border)] pb-3">
 		<div class="flex flex-wrap items-center gap-2">
@@ -608,6 +503,12 @@
 			>
 				{t('blocks.import')}
 			</button>
+			<button
+				class="rounded border border-[var(--color-border)] bg-transparent px-2 py-0.5 text-xs text-[var(--color-text)] hover:border-[var(--color-text-muted)]"
+				onclick={() => profilesModal.show('customblocks')}
+			>
+				{t('blocks.customBlocks')}{customBlocks.length > 0 ? ` (${customBlocks.length})` : ''}
+			</button>
 			<div class="flex-1"></div>
 			<button
 				class="rounded bg-[var(--color-primary)] px-2 py-0.5 text-xs text-white hover:bg-[var(--color-primary-hover)]"
@@ -665,12 +566,7 @@
 		{/each}
 	</div>
 
-	<!-- Custom Block Section -->
-	<BlockSelectionAddCustom
-		onAddCustomBlock={handleAddCustomBlock}
-		onDeleteCustomBlock={handleDeleteCustomBlock}
-		{lastSelectedCustomBlock}
-	/>
+	{/if}
 </div>
 
 <!-- ── Share Dialog ── -->

@@ -10,9 +10,8 @@
 </script>
 
 <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-	<div class="flex w-full items-center gap-2">
+	<div class="flex w-full items-center gap-2 pl-8">
 		<h3 class="flex-1 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">
-			<span class="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold leading-none text-white">4</span>
 			{t('preprocess.title')}
 		</h3>
 		<button
