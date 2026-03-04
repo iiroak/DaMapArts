@@ -119,7 +119,7 @@
 				<option value="none">{t('processing.none')}</option>
 				<optgroup label="Mapmaker Memo">
 					<option value="memo-none">Memo: Limited Staircase (No Dither)</option>
-					<option value="memo-pattern-bayer4">Memo: Pattern (Bayer 4Ã—4)</option>
+					<option value="memo-pattern-bayer4">Memo: Pattern (Bayer 4×4)</option>
 					<option value="memo-diffuse-fs">Memo: Diffusion (Floyd-Steinberg)</option>
 				</optgroup>
 				<optgroup label={t('processing.errorDiffusion')}>
@@ -143,14 +143,14 @@
 					<option value="ostromoukhov">Ostromoukhov</option>
 				</optgroup>
 				<optgroup label={t('processing.ordered')}>
-					<option value="bayer-2x2">Bayer (2Ã—2)</option>
-					<option value="bayer-3x3">Bayer (3Ã—3)</option>
-					<option value="bayer-4x4">Bayer (4Ã—4)</option>
-					<option value="bayer-8x8">Bayer (8Ã—8)</option>
-					<option value="ordered-3x3">Ordered (3Ã—3)</option>
+					<option value="bayer-2x2">Bayer (2×2)</option>
+					<option value="bayer-3x3">Bayer (3×3)</option>
+					<option value="bayer-4x4">Bayer (4×4)</option>
+					<option value="bayer-8x8">Bayer (8×8)</option>
+					<option value="ordered-3x3">Ordered (3×3)</option>
 					<option value="cluster-dot">Cluster Dot (Halftone)</option>
-					<option value="halftone-8x8">Halftone (8Ã—8)</option>
-					<option value="void-cluster-14x14">Void-and-cluster (14Ã—14)</option>
+					<option value="halftone-8x8">Halftone (8×8)</option>
+					<option value="void-cluster-14x14">Void-and-cluster (14×14)</option>
 					<option value="knoll">Knoll</option>
 					<option value="blue-noise">Blue Noise</option>
 				</optgroup>
@@ -246,14 +246,14 @@
 						<label class="block">
 							<div class="mb-1 text-xs text-[var(--color-muted)]">Pattern</div>
 							<select bind:value={app.memoPatternId} class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm">
-								<option value="bayer-2x2">Bayer 2Ã—2</option>
-								<option value="bayer-3x3">Bayer 3Ã—3</option>
-								<option value="bayer-4x4">Bayer 4Ã—4</option>
-								<option value="bayer-8x8">Bayer 8Ã—8</option>
-								<option value="ordered-3x3">Ordered 3Ã—3</option>
+								<option value="bayer-2x2">Bayer 2×2</option>
+								<option value="bayer-3x3">Bayer 3×3</option>
+								<option value="bayer-4x4">Bayer 4×4</option>
+								<option value="bayer-8x8">Bayer 8×8</option>
+								<option value="ordered-3x3">Ordered 3×3</option>
 								<option value="cluster-dot">Cluster Dot</option>
-								<option value="halftone-8x8">Halftone 8Ã—8</option>
-								<option value="void-cluster-14x14">Void Cluster 14Ã—14</option>
+								<option value="halftone-8x8">Halftone 8×8</option>
+								<option value="void-cluster-14x14">Void Cluster 14×14</option>
 								<option value="knoll">Knoll</option>
 							</select>
 						</label>

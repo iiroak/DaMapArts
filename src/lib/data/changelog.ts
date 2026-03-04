@@ -73,7 +73,7 @@ const changelog: ChangelogRelease[] = [
           'Removed duplicate "Euclidian" option (was identical to RGB).',
           'Preview container no longer resets its resized height when panning the image.',
           'Color Space selector no longer goes blank on reload — default changed from removed "lab" to "mapartcraft-default", plus legacy profile migration.',
-          'Fixed UTF-8 BOM corruption that caused dithering method names to display garbled characters (e.g. Bayer 2Ã—2).',
+          'Fixed UTF-8 BOM corruption that caused dithering method names to display garbled characters (e.g. Bayer 2×2).',
         ],
       },
       {
